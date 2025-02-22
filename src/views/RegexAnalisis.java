@@ -43,8 +43,21 @@ public class RegexAnalisis {
     }
 
     private static boolean esNumeroValido(String palabra) {
-        String regex = "^(\\$?\\d{1,3}(,\\d{3})*(\\.\\d+)?%?|\\d+\\.\\d+|\\d{1,3}(,\\d{3})*(\\.\\d+)?|\\d+)$";
-        return Pattern.matches(regex, palabra);
+        //String regex = "^(\\$?\\d{1,3}(,\\d{3})*(\\.\\d+)?%?|\\d+\\.\\d+|\\d{1,3}(,\\d{3})*(\\.\\d+)?|\\d+)$";
+    	String regex = "^-?(\\$?\\d{1,3}(,\\d{3})*(\\.\\d+)?%?|\\d+\\.\\d+|\\d{1,3}(,\\d{3})*(\\.\\d+)?|\\d+|\\d+\\/\\d+)$";
+        
+    	return Pattern.matches(regex, palabra);
+        
+        /*
+         * -? Opcional simbolo de negativo
+         * \\$? Opcional simbolo de pesos para valores monetarios
+         * \\d{1,3} Uno a tres digitos para la 1er parte del numero,
+         * (,\\d{3})* Opcionales grupos de 3 digitos separados por comas
+         * (\\.\\d+)? Opcional parte decimal
+         * %? Opcional simbolo de porcentaje
+         * | Alternativa para diferentes formatos (reales, naturales, monetarios, porcentajes)
+         * \\d+\\/\\d+  Permite fracciones n/d
+         * */
     }
 
     private static String clasificarNumero(String palabra) {
@@ -52,7 +65,7 @@ public class RegexAnalisis {
             return "Porcentaje";
         } else if (palabra.startsWith("$")) {
             return "Valor monetario";
-        } else if (palabra.contains(".")) {
+        } else if (palabra.contains(".") || (palabra.contains("/")) || (palabra.startsWith("-"))) {
             return "Real";
         } else {
             return "Natural";
