@@ -16,6 +16,9 @@ public class RegexAnalisis {
             String[] palabras = linea.split(" ");
 
             for (String palabra : palabras) {
+                // Eliminar comas o puntos al final de la palabra (antes de un espacio)
+                palabra = palabra.replaceAll("[.,]$", "");
+
                 if (contieneDigito(palabra)) {
                     if (esNumeroValido(palabra)) {
                         String tipo = clasificarNumero(palabra);
@@ -40,9 +43,7 @@ public class RegexAnalisis {
     }
 
     private static boolean esNumeroValido(String palabra) {
-        // Expresión regular para números válidos con comas como separadores de miles
-        // y puntos o comas opcionales al final
-        String regex = "^-?\\d{1,3}(,\\d{3})*(\\.\\d+)?%?[.,]?$|^\\$\\d{1,3}(,\\d{3})*(\\.\\d+)?[.,]?$|^-?\\d+[.,]?$";
+        String regex = "^(\\$?\\d{1,3}(,\\d{3})*(\\.\\d+)?%?|\\d+\\.\\d+|\\d{1,3}(,\\d{3})*(\\.\\d+)?|\\d+)$";
         return Pattern.matches(regex, palabra);
     }
 
@@ -68,6 +69,9 @@ public class RegexAnalisis {
             String[] palabras = linea.split(" ");
 
             for (String palabra : palabras) {
+                // Eliminar comas o puntos al final de la palabra (antes de un espacio)
+                palabra = palabra.replaceAll("[.,]$", "");
+
                 if (contieneDigito(palabra) && !esNumeroValido(palabra)) {
                     invalidos.add(new String[]{String.valueOf(contador++), String.valueOf(i + 1), palabra, "Inválido"});
                 }

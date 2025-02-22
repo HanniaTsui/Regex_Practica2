@@ -42,7 +42,7 @@ public class RegexView extends JFrame {
         String texto = "En el último trimestre del año 2024, la empresa reportó ingresos por 5,000,000.50 dólares, lo\r\n"
                 + "que representa un aumento del 7.8% en comparación con el mismo período del año anterior. El\r\n"
                 + "número de productos vendidos alcanzó los 120,000, con un promedio de 500 unidades por día.\r\n"
-                + "La tasa de retorno de inversión fue del 15.2%, superando las expectativas iniciales del 10%.\r\n"
+                + "La tasa de retorno de inversión fue del 15.2%, superando las expectativas iniciales del 10%. \r\n"
                 + "Además, se estableció una meta de crecimiento del 20% para el próximo año, proyectando\r\n"
                 + "ventas de más de 6 millones de unidades. Los costos operativos aumentaron un 3.5%, pero el \r\n"
                 + "margen de ganancias sigue siendo saludable, con un 25%. En cuanto a la eficiencia energética, \r\n"
