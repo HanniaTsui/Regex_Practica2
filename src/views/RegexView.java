@@ -79,7 +79,7 @@ public class RegexView extends JFrame {
         areaTexto.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JScrollPane scrollAreaTexto = new JScrollPane(areaTexto);
-        scrollAreaTexto.setBounds(30, 120, 577, 476);
+        scrollAreaTexto.setBounds(30, 120, 580, 476);
         panelContenido.add(scrollAreaTexto);
 
         JTabbedPane pestañasTablas = new JTabbedPane();
@@ -114,25 +114,28 @@ public class RegexView extends JFrame {
                 List<String[]> resultados = RegexAnalisis.analizarTexto(texto);
                 List<String[]> invalidos = RegexAnalisis.obtenerInvalidos(texto);
 
+                // Modelo para la tabla de resultados válidos
                 DefaultTableModel modelo = new DefaultTableModel();
                 modelo.setColumnIdentifiers(new String[]{"No.", "No. Línea", "Cadena", "Tipo"});
 
+                int indexValido = 1; 
                 for (String[] fila : resultados) {
-                    modelo.addRow(fila);
+                    modelo.addRow(new String[]{String.valueOf(indexValido++), fila[1], fila[2], fila[3]});
                 }
-
                 tablaResultados.setModel(modelo);
 
+                // Modelo para la tabla de resultados inválidos
                 DefaultTableModel modeloInvalidos = new DefaultTableModel();
                 modeloInvalidos.setColumnIdentifiers(new String[]{"No.", "No. Línea", "Cadena", "Tipo"});
 
+                int indexInvalido = 1; // Contador para los resultados inválidos
                 for (String[] fila : invalidos) {
-                    modeloInvalidos.addRow(fila);
+                    modeloInvalidos.addRow(new String[]{String.valueOf(indexInvalido++), fila[1], fila[2], fila[3]});
                 }
-
                 tablaInvalidos.setModel(modeloInvalidos);
             }
         });
+
 
         botonLimpiar.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
