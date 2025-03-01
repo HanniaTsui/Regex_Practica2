@@ -1,4 +1,4 @@
-package views;
+package practica2;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +44,7 @@ public class RegexAnalisis {
 
     private static boolean esNumeroValido(String palabra) {
         //String regex = "^(\\$?\\d{1,3}(,\\d{3})*(\\.\\d+)?%?|\\d+\\.\\d+|\\d{1,3}(,\\d{3})*(\\.\\d+)?|\\d+)$";
-    	String regex = "^-?(\\$?\\d{1,3}(,\\d{3})*(\\.\\d+)?%?|\\d+\\.\\d+|\\d{1,3}(,\\d{3})*(\\.\\d+)?|\\d+|\\d+\\/\\d+)$";
+    	String regex = "^-?(\\$?\\d{1,3}(,\\d{3})*(\\.\\d+)?%?|\\d+\\.\\d+|\\d{1,3}(,\\d{3})*(\\.\\d+)?|\\d+|\\d+\\/\\d+)$"; //Para incluir negativos y fracciones en Real
         
     	return Pattern.matches(regex, palabra);
         

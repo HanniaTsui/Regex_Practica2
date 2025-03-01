@@ -1,4 +1,4 @@
-package views;
+package practica2;
 
 import java.awt.EventQueue;
 import javax.swing.*;
