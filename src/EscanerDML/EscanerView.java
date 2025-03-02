@@ -19,7 +19,7 @@ public class EscanerView extends JFrame {
     private JTextArea areaTexto;
     private JButton botonAceptar;
     private JButton botonLimpiar;
-    private JTextArea areaTextoErrores;
+    private JTable tablaErrores;
 
     public static void main(String[] args) {
         EventQueue.invokeLater(new Runnable() {
@@ -104,17 +104,16 @@ public class EscanerView extends JFrame {
         botonLimpiar.setBackground(new Color(49, 59, 255));
         panelContenido.add(botonLimpiar);
         
-        areaTextoErrores = new JTextArea("");
-        areaTextoErrores.setEditable(false);
-        areaTextoErrores.setLineWrap(true);
-        areaTextoErrores.setWrapStyleWord(true);
-        areaTextoErrores.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        areaTextoErrores.setFont(new Font("Tahoma", Font.BOLD, 13));
-        areaTextoErrores.setBackground(Color.WHITE);
         
-        JScrollPane scrollAreaTextoErrores = new JScrollPane(areaTextoErrores);
-        scrollAreaTextoErrores.setBounds(30, 432, 578, 198);
-        panelContenido.add(scrollAreaTextoErrores);
+        tablaErrores = new JTable();
+        tablaErrores.setBounds(30, 432, 578, 198);
+        panelContenido.add(tablaErrores);
+        DefaultTableModel modeloTablaErrores = new DefaultTableModel();
+        modeloTablaErrores.addColumn("No. de línea");
+        modeloTablaErrores.addColumn("Lexema inválido");
+        modeloTablaErrores.addColumn("Tipo");
+        tablaErrores.setModel(modeloTablaErrores);
+        
         
         JLabel lblErrores = new JLabel("Errores");
         lblErrores.setFont(new Font("Tahoma", Font.BOLD, 15));
@@ -188,8 +187,8 @@ public class EscanerView extends JFrame {
                 for (String error : analizador.getErrores()) {
                     errores.append(error).append("\n");
                 }
-                areaTextoErrores.setForeground(Color.red);;
-                areaTextoErrores.setText(errores.toString());
+             //   areaTextoErrores.setForeground(Color.red);;
+             //   areaTextoErrores.setText(errores.toString());
                 
             }
         });
@@ -200,7 +199,7 @@ public class EscanerView extends JFrame {
                 tablaLexica.setModel(new DefaultTableModel());
                 tablaIdentificadores.setModel(new DefaultTableModel());
                 tablaConstantes.setModel(new DefaultTableModel());
-                areaTextoErrores.setText("");
+                tablaErrores.setModel(new DefaultTableModel());
             }
         });
     }
