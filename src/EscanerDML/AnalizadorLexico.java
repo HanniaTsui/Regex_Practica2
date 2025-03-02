@@ -47,12 +47,12 @@ public class AnalizadorLexico {
         // Expresiones regulares para identificar tokens, identificadores y constantes
         String patronToken = "\\b(SELECT|FROM|WHERE|AND|OR|CREATE|TABLE|CHAR|NUMERIC|NOT|NULL|"
                 + "CONSTRAINT|KEY|PRIMARY|FOREIGN|REFERENCES|INSERT|INTO|VALUES)\\b|"
-                + ">=|<=|<>|=|>|<|\\*|,|\\(|\\)|'[^']*'|\\d+|\\w+";
+                + ">=|<=|<>|=|>|<|\\*|,|\\(|\\)|'[^']*'|\\d+\\w*|\\w+";
 
         Pattern pattern = Pattern.compile(patronToken);
         Matcher matcher = pattern.matcher(sentenciaSQL);
 
-        int linea = 1;
+        int linea = 1; 
         int posicionInicio = 0;
 
         // Recorrer la sentencia SQL para contar los saltos de línea
@@ -138,6 +138,7 @@ public class AnalizadorLexico {
         Matcher matcherOperadores = operadoresNoValidos.matcher(sentenciaSQL);
         while (matcherOperadores.find()) {
             errores.add("Línea " + linea + ": '" + matcherOperadores.group() + "' : Operador no válido");
+            System.out.println("Línea " + linea + ": '" + matcherOperadores.group() + "' : Operador no válido");
         }
     }
 
@@ -146,6 +147,7 @@ public class AnalizadorLexico {
         Matcher matcherSimbolos = simbolosDesconocidos.matcher(sentenciaSQL);
         while (matcherSimbolos.find()) {
             errores.add("Línea " + linea + ": '" + matcherSimbolos.group() + "' : Símbolo desconocido");
+            System.out.println("Línea " + linea + ": '" + matcherSimbolos.group() + "' : Símbolo desconocido");
         }
     }
 
@@ -156,6 +158,7 @@ public class AnalizadorLexico {
                 for (String palabraReservada : PALABRAS_RESERVADAS) {
                     if (calcularDistanciaLevenshtein(lexema, palabraReservada) == 1) {
                         errores.add("Línea " + token.getLinea() + ": '" + lexema + ": Error palabra reservada mal escrita " + palabraReservada);
+                        System.out.println("Línea " + token.getLinea() + ": '" + lexema + ": Error palabra reservada mal escrita " + palabraReservada);
                         break;
                     }
                 }

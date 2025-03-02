@@ -42,7 +42,7 @@ public class EscanerView extends JFrame {
 
         String sentenciaSQL = "SELECT ANOMBRE, CALIFICACION, TURNO\r\n"
                 + "FROM ALUMNOS, INSCRITOS, MATERIAS, CARRERAS\r\n"
-                + "WHERE MNOMBRE='LENAUT2' AND TURNO = 'TM' AND CNOMBRE='ISC' AND SEMESTRE='2023I' AND CALIFICACION >= 70";
+                + "WHERE MNOMBRE='LENAUT2' AND TURNO = 'TM' AND CNOMBRE='ISC' AND SEMESTRE='2023I' AND CALIFICACION >= 70;";
 
         panelContenido = new JPanel();
         panelContenido.setBorder(new EmptyBorder(5, 5, 5, 5));
