@@ -86,19 +86,19 @@ public class AnalizadorLexico {
                 // Es un identificador 
                 if (lexema.matches("^\\d.*")) {
                     // Identificador que comienza con un número (inválido)
-                    errores.add("Línea " + linea + ": '" + lexema + "' : Identificador inválido (no puede comenzar con un número)");
+                    errores.add("Línea " + linea + ": '" + lexema + "' : Error de sintaxis. Identificador inválido (no puede comenzar con un número)");
                 } else {
                     identificadores.add(new Identificador(lexema, linea));
                 }
                 
                 if (tokenAnterior != null && esOperador(tokenAnterior)) {
-                    errores.add("Línea " + linea + ": '" + lexema + "' : Error constante alfanumérica debe estar entre comillas simples");
+                    errores.add("Línea " + linea + ": '" + lexema + "' : Error de sintaxis. Constante alfanumérica debe estar entre comillas simples");
                 }                
             } 
             
             tokenAnterior = lexema;
         }
-        verificarIdentificadoresEntreComillasDobles(sentenciaSQL, linea);
+        verificarIdentificadoresEntreComillas(sentenciaSQL, linea);
         verificarSimbolosDesconocidos(sentenciaSQL, linea);
         verificarCadenasMalFormateadas(sentenciaSQL, linea);
         verificarPalabrasReservadasMalEscritas();
@@ -113,6 +113,51 @@ public class AnalizadorLexico {
     private boolean esOperador(String token) {
         return token.matches("=|>|<|>=|<=|<>");
     }
+    
+    private void verificarIdentificadoresEntreComillas(String sentenciaSQL, int linea) {
+        // Primero, verifica los identificadores entre comillas dobles
+        verificarIdentificadoresEntreComillasDobles(sentenciaSQL, linea);
+        
+        // Ahora verifica los identificadores entre comillas simples
+        // Esto es complicado porque necesitamos distinguir entre constantes de cadena válidas
+        // e identificadores incorrectamente colocados entre comillas
+        
+        Pattern patronComillasSimples = Pattern.compile("'([^']*)'");
+        Matcher matcherComillasSimples = patronComillasSimples.matcher(sentenciaSQL);
+        
+        while (matcherComillasSimples.find()) {
+            String contenido = matcherComillasSimples.group(1); // Contenido entre comillas simples
+            
+            // Si el contenido coincide con un patrón de identificador (solo letras, números y guiones bajos)
+            // y no contiene espacios o caracteres especiales, podría ser un identificador
+            if (contenido.matches("^[a-zA-Z]\\w*$") && !contenido.contains(" ")) {
+                // Verifica si se usa en un contexto donde se esperaría una constante de cadena
+                // Por ejemplo, después de un operador como =, <, >, etc.
+                
+                int posicionInicio = matcherComillasSimples.start();
+                boolean esConstanteEsperada = false;
+                
+                // Busca si hay un operador antes de este potencial identificador
+                for (int i = posicionInicio - 1; i >= 0; i--) {
+                    char c = sentenciaSQL.charAt(i);
+                    if (Character.isWhitespace(c)) {
+                        continue; // Omite espacios en blanco
+                    }
+                    if (c == '=' || c == '>' || c == '<') {
+                        // Si hay un operador, probablemente sea una constante de cadena válida
+                        esConstanteEsperada = true;
+                    }
+                    break;
+                }
+                
+                // Si no está en un contexto donde se esperaría una constante de cadena, márquelo como error
+                if (!esConstanteEsperada) {
+                    errores.add("Línea " + linea + ": '" + contenido + "' : Error de sintaxis. Identificador no debe ir entre comillas simples");
+                }
+            }
+        }
+    }
+    
     private void verificarIdentificadoresEntreComillasDobles(String sentenciaSQL, int linea) {
         // Expresión regular para identificar identificadores entre comillas dobles
         Pattern patronComillasDobles = Pattern.compile("\"([^\"]*)\"");
@@ -120,12 +165,11 @@ public class AnalizadorLexico {
 
         while (matcherComillasDobles.find()) {
             String lexema = matcherComillasDobles.group(1); // Extraer el contenido entre comillas dobles
-            if (lexema.matches("\\w+")) { // Verificar si es un identificador válido
-                errores.add("Línea " + linea + ": '\"" + lexema + "\"' : Identificador no debe ir entre comillas dobles");
+            if (lexema.matches("^[a-zA-Z]\\w*$")) { // Verificar si es un identificador válido
+                errores.add("Línea " + linea + ": '\"" + lexema + "\"' : Error de sintaxis. Identificador no debe ir entre comillas dobles");
             }
         }
     }  
-
 
     private void verificarCadenasMalFormateadas(String sentenciaSQL, int linea) {
         boolean dentroDeCadena = false; // Indica si estamos dentro de una cadena
@@ -150,7 +194,7 @@ public class AnalizadorLexico {
             if ((c == '\n' || i == sentenciaSQL.length() - 1) && dentroDeCadena) {
                 // La cadena no está cerrada
                 String cadenaMalFormateada = sentenciaSQL.substring(inicioCadena, i + 1);
-                errores.add("Línea " + linea + ": '" + cadenaMalFormateada + "' : Cadena mal formateada");
+                errores.add("Línea " + linea + ": '" + cadenaMalFormateada + "' : Error. Cadena mal formateada");
                 dentroDeCadena = false; // Reiniciamos el estado
             }
         }
@@ -161,7 +205,7 @@ public class AnalizadorLexico {
         Pattern operadoresNoValidos = Pattern.compile("=>|=<|><");
         Matcher matcherOperadores = operadoresNoValidos.matcher(sentenciaSQL);
         while (matcherOperadores.find()) {
-            errores.add("Línea " + linea + ": '" + matcherOperadores.group() + "' : Operador no válido");
+            errores.add("Línea " + linea + ": '" + matcherOperadores.group() + "' : Error de sintaxis. Operador no válido");
             System.out.println("Línea " + linea + ": '" + matcherOperadores.group() + "' : Operador no válido");
         }
     }
@@ -170,7 +214,7 @@ public class AnalizadorLexico {
         Pattern simbolosDesconocidos = Pattern.compile("[\\$@]");
         Matcher matcherSimbolos = simbolosDesconocidos.matcher(sentenciaSQL);
         while (matcherSimbolos.find()) {
-            errores.add("Línea " + linea + ": '" + matcherSimbolos.group() + "' : Símbolo desconocido");
+            errores.add("Línea " + linea + ": '" + matcherSimbolos.group() + "' : Error de sintaxis. Símbolo desconocido");
             System.out.println("Línea " + linea + ": '" + matcherSimbolos.group() + "' : Símbolo desconocido");
         }
     }
@@ -182,14 +226,14 @@ public class AnalizadorLexico {
                 for (String palabraReservada : PALABRAS_RESERVADAS) {
                     // Comprobar si el lexema empieza con una palabra reservada
                     if (lexema.startsWith(palabraReservada)) {
-                        errores.add("Línea " + token.getLinea() + ": '" + lexema + "': Error palabra reservada mal escrita, debería ser '" + palabraReservada + "'");
+                        errores.add("Línea " + token.getLinea() + ": '" + lexema + "': Error de sintaxis. Palabra reservada mal escrita, debería ser '" + palabraReservada + "'");
                         System.out.println("Línea " + token.getLinea() + ": '" + lexema + "': Error de sintaxis. Palabra reservada mal escrita, debería ser '" + palabraReservada + "'");
                         break;
                     }
                     // Usar la distancia de Levenshtein como validación adicional
                     if (calcularDistanciaLevenshtein(lexema, palabraReservada) == 1) {
                         errores.add("Línea " + token.getLinea() + ": '" + lexema + "': Error de sintaxis. Palabra reservada mal escrita, debería ser '" + palabraReservada + "'");
-                        System.out.println("Línea " + token.getLinea() + ": '" + lexema + "': Error palabraalabra reservada mal escrita, debería ser '" + palabraReservada + "'");
+                        System.out.println("Línea " + token.getLinea() + ": '" + lexema + "': Error sintaxis. Palabra reservada mal escrita, debería ser '" + palabraReservada + "'");
                         break;
                     }
                 }
@@ -217,6 +261,7 @@ public class AnalizadorLexico {
         }
         return dp[s1.length()][s2.length()];
     }
+    
     private void verificarComasEntreIdentificadores() {
         boolean enClausulaSelect = false; // Indica si estamos en la cláusula SELECT
         boolean enClausulaFrom = false;  // Indica si estamos en la cláusula FROM
@@ -245,7 +290,7 @@ public class AnalizadorLexico {
                 if (i > 0) {
                     Token tokenAnterior = tokens.get(i - 1);
                     if (tokenAnterior.getLexema().equals(",")) {
-                        errores.add("Línea " + tokenActual.getLinea() + ": Coma incorrecta antes de '" + tokenActual.getLexema() + "' : Error de sintaxis");
+                        errores.add("Línea " + tokenActual.getLinea() + ": " + tokenActual.getLexema() + "' : Error de sintaxis. Coma incorrecta antes de '" + tokenActual.getLexema() );
                     }
                 }
             }
@@ -259,13 +304,14 @@ public class AnalizadorLexico {
                         // Si el siguiente token no es una coma y no es una palabra reservada (fin de la cláusula)
                         if (!tokenSiguiente.getLexema().equals(",") && 
                             !PALABRAS_RESERVADAS.contains(tokenSiguiente.getLexema().toUpperCase())) {
-                            errores.add("Línea " + tokenActual.getLinea() + ": Falta una coma después de '" + tokenActual.getLexema() + "' : Error de sintaxis");
+                            errores.add("Línea " + tokenActual.getLinea() + ":" + tokenActual.getLexema() + "' : Error de sintaxis. Falta una coma después de '" + tokenActual.getLexema());
                         }
                     }
                 }
             }
         }
     }
+    
     private void verificarAgrupacionCondiciones() {
         boolean enClausulaWhere = false; // Indica si estamos en la cláusula WHERE
         int nivelAgrupacion = 0; // Nivel de anidamiento de paréntesis
@@ -316,6 +362,7 @@ public class AnalizadorLexico {
             errores.add("Línea 1: Paréntesis sin cerrar : Error de sintaxis");
         }
     }
+    
     public List<Token> getTokens() {
         return tokens;
     }
@@ -374,17 +421,37 @@ public class AnalizadorLexico {
                 case "SELECT": return 10;
                 case "FROM": return 11;
                 case "WHERE": return 12;
+                case "IN": return 13;
                 case "AND": return 14;
                 case "OR": return 15;
+                case "CREATE": return 16;
+                case "TABLE": return 17;
+                case "CHAR": return 18;
+                case "NUMERIC": return 19;
+                case "NOT": return 20;
+                case "NULL": return 21;
+                case "CONSTRAINT": return 22;
+                case "KEY": return 23;
+                case "PRIMARY": return 24;
+                case "FOREIGN": return 25;
+                case "REFERENCES": return 26;
+                case "INSERT": return 27;
+                case "INTO": return 28;
+                case "VALUES": return 29;
+                case ",": return 50;
+                case ".": return 51;
+                case "(": return 52;
+                case ")": return 53;
+                case "'": return 54;
+                case "+": return 70;
+                case "-": return 71;
+                case "*": return 72;
+                case "/": return 73;
                 case "=": return 83;
                 case ">": return 81;
                 case "<": return 82;
                 case ">=": return 84;
                 case "<=": return 85;
-                case ",": return 50;
-                case "(": return 52;
-                case ")": return 53;
-                case "'": return 54;
                 default: return 0;
             }
         }
