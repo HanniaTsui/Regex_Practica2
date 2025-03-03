@@ -27,6 +27,23 @@ public class AnalizadorLexico {
     }
 
     public void analizar(String sentenciaSQL) {
+        // Limpiar listas antes de un nuevo análisis
+        tokens.clear();
+        identificadores.clear();
+        constantes.clear();
+        errores.clear();
+
+        // Contar el número de líneas en la sentencia SQL
+        int totalLineas = sentenciaSQL.split("\n").length;
+
+        // Verificar si la sentencia SQL termina con ';'
+        if (!sentenciaSQL.trim().endsWith(";")) {
+            errores.add("Línea " + totalLineas + ": La sentencia no termina con ';' : Error de sintaxis");
+        } else {
+            // Eliminar el punto y coma al final de la sentencia para evitar errores en el análisis léxico
+            sentenciaSQL = sentenciaSQL.trim().substring(0, sentenciaSQL.trim().length() - 1);
+        }
+
         // Expresiones regulares para identificar tokens, identificadores y constantes
         String patronToken = "(SELECT|FROM|WHERE|AND|OR|>=|<=|<>|=|>|<|\\*|,|\\(|\\)|'[^']*'|\\d+|\\w+|>\\s*=|<\\s*=)";
         Pattern pattern = Pattern.compile(patronToken);
@@ -56,20 +73,128 @@ public class AnalizadorLexico {
                 // Es una constante numérica
                 constantes.add(new Constante(lexema, linea));
             } else if (lexema.matches("'[^']*'")) {
-                // Es una constante alfanumérica
+                // Es una constante alfanumérica (cadena entre comillas simples)
                 constantes.add(new Constante(lexema, linea));
             } else if (lexema.matches("\\w+")) {
                 // Es un identificador
-                identificadores.add(new Identificador(lexema, linea));
+                if (lexema.matches("\\d.*")) {
+                    // Identificador que comienza con un número (inválido)
+                    errores.add("Línea " + linea + ": '" + lexema + "' : Identificador inválido (no puede comenzar con un número)");
+                } else {
+                    identificadores.add(new Identificador(lexema, linea));
+                }
             }
         }
 
         // Verificar errores léxicos
+        verificarSimbolosDesconocidos(sentenciaSQL, linea);
+        verificarCadenasMalFormateadas(sentenciaSQL, linea);
+        verificarPalabrasReservadasMalEscritas();
+        verificarOperadoresNoValidos(sentenciaSQL, linea);
+
+        // Si no hay tokens válidos, agregar un error
         if (tokens.isEmpty()) {
             errores.add("Error léxico: La sentencia SQL no contiene tokens válidos.");
         }
     }
 
+    private void verificarCadenasMalFormateadas(String sentenciaSQL, int linea) {
+        boolean dentroDeCadena = false; // Indica si estamos dentro de una cadena
+        int inicioCadena = -1; // Posición donde comienza la cadena
+
+        for (int i = 0; i < sentenciaSQL.length(); i++) {
+            char c = sentenciaSQL.charAt(i);
+
+            // Si encontramos una comilla simple
+            if (c =='\'') {
+                if (!dentroDeCadena) {
+                    // Comienza una nueva cadena
+                    dentroDeCadena = true;
+                    inicioCadena = i;
+                } else {
+                    // Termina una cadena
+                    dentroDeCadena = false;
+                }
+            }
+
+            // Si llegamos al final de la línea o la sentencia y estamos dentro de una cadena
+            if ((c == '\n' || i == sentenciaSQL.length() - 1) && dentroDeCadena) {
+                // La cadena no está cerrada
+                String cadenaMalFormateada = sentenciaSQL.substring(inicioCadena, i + 1);
+                errores.add("Línea " + linea + ": '" + cadenaMalFormateada + "' : Cadena mal formateada");
+                dentroDeCadena = false; // Reiniciamos el estado
+            }
+        }
+    }
+
+    private void verificarOperadoresNoValidos(String sentenciaSQL, int linea) {
+        // Solo marcar como error operadores no válidos, como "=>", "=<", "><"
+        Pattern operadoresNoValidos = Pattern.compile("=>|=<|><");
+        Matcher matcherOperadores = operadoresNoValidos.matcher(sentenciaSQL);
+        while (matcherOperadores.find()) {
+            errores.add("Línea " + linea + ": '" + matcherOperadores.group() + "' : Operador no válido");
+        }
+    }
+
+    private void verificarSimbolosDesconocidos(String sentenciaSQL, int linea) {
+        Pattern simbolosDesconocidos = Pattern.compile("[#\\$@]");
+        Matcher matcherSimbolos = simbolosDesconocidos.matcher(sentenciaSQL);
+        while (matcherSimbolos.find()) {
+            errores.add("Línea " + linea + ": '" + matcherSimbolos.group() + "' : Símbolo desconocido");
+        }
+    }
+
+    private void verificarPalabrasReservadasMalEscritas() {
+        for (Token token : tokens) {
+            // Verificar si el lexema es similar a una palabra reservada pero no coincide exactamente
+            if (esPosiblePalabraReservadaMalEscrita(token.getLexema())) {
+                errores.add("Línea " + token.getLinea() + ": '" + token.getLexema() + "' : Palabra reservada mal escrita");
+            }
+        }
+    }
+
+    private boolean esPosiblePalabraReservadaMalEscrita(String lexema) {
+        // Convertir el lexema a mayúsculas para comparación insensible a mayúsculas/minúsculas
+        String lexemaMayusculas = lexema.toUpperCase();
+
+        // Excluir operadores y constantes numéricas de la validación
+        if (lexema.matches("=|>|<|>=|<=|<>") || lexema.matches("\\d+")) {
+            return false; // No es una palabra reservada mal escrita
+        }
+
+        // Verificar si el lexema es similar a una palabra reservada pero no coincide exactamente
+        for (String palabraReservada : PALABRAS_RESERVADAS) {
+            if (lexemaMayusculas.equals(palabraReservada)) {
+                return false; // Coincide exactamente, no es un error
+            }
+            if (calcularDistanciaLevenshtein(lexemaMayusculas, palabraReservada) <= 1) {
+                return true; // Es similar pero no coincide, probablemente mal escrita
+            }
+
+        }
+        return false;
+    }
+
+    private int calcularDistanciaLevenshtein(String s1, String s2) {
+        // Algoritmo de distancia de Levenshtein para medir la similitud entre dos cadenas
+        int[][] dp = new int[s1.length() + 1][s2.length() + 1];
+
+        for (int i = 0; i <= s1.length(); i++) {
+            for (int j = 0; j <= s2.length(); j++) {
+                if (i == 0) {
+                    dp[i][j] = j;
+                } else if (j == 0) {
+                    dp[i][j] = i;
+                } else {
+                    dp[i][j] = Math.min(
+                        Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1),
+                        dp[i - 1][j - 1] + (s1.charAt(i - 1) == s2.charAt(j - 1) ? 0 : 1)
+                    );
+                }
+            }
+        }
+        return dp[s1.length()][s2.length()];
+    }
     public List<Token> getTokens() {
         return tokens;
     }

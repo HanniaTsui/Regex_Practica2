@@ -42,8 +42,7 @@ public class EscanerView extends JFrame {
 
         String sentenciaSQL = "SELECT ANOMBRE, CALIFICACION, TURNO\r\n"
                 + "FROM ALUMNOS, INSCRITOS, MATERIAS, CARRERAS\r\n"
-                + "WHERE MNOMBRE='LENAUT2' AND TURNO = 'TM'\r\n"
-                + "AND CNOMBRE='ISC' AND SEMESTRE='2023I' AND CALIFICACION >= 70";
+                + "WHERE MNOMBRE='LENAUT2' AND TURNO = 'TM' AND CNOMBRE='ISC' AND SEMESTRE='2023I' AND CALIFICACION >= 70";
 
         panelContenido = new JPanel();
         panelContenido.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -106,13 +105,9 @@ public class EscanerView extends JFrame {
         
         
         tablaErrores = new JTable();
-        tablaErrores.setBounds(30, 432, 578, 198);
-        panelContenido.add(tablaErrores);
-        DefaultTableModel modeloTablaErrores = new DefaultTableModel();
-        modeloTablaErrores.addColumn("No. de línea");
-        modeloTablaErrores.addColumn("Lexema inválido");
-        modeloTablaErrores.addColumn("Tipo");
-        tablaErrores.setModel(modeloTablaErrores);
+        JScrollPane scrollTablaErrores = new JScrollPane(tablaErrores);
+        scrollTablaErrores.setBounds(30, 432, 578, 198);
+        panelContenido.add(scrollTablaErrores);
         
         
         JLabel lblErrores = new JLabel("Errores");
@@ -182,14 +177,30 @@ public class EscanerView extends JFrame {
                 }
                 tablaConstantes.setModel(modeloTablaConstantes);
 
-                // Mostrar errores en el área de texto de errores
-                StringBuilder errores = new StringBuilder();
+             // Mostrar errores en la tabla de errores
+                DefaultTableModel modeloTablaErrores = new DefaultTableModel();
+                modeloTablaErrores.addColumn("No. de línea");
+                modeloTablaErrores.addColumn("Lexema inválido");
+                modeloTablaErrores.addColumn("Tipo");
+
                 for (String error : analizador.getErrores()) {
-                    errores.append(error).append("\n");
+                    String[] partesError = error.split(":");
+                    if (partesError.length >= 3) { // Verificar que hay al menos 3 partes
+                        modeloTablaErrores.addRow(new Object[]{
+                            partesError[0], // Línea
+                            partesError[1], // Lexema inválido
+                            partesError[2]  // Tipo de error
+                        });
+                    } else {
+                        // Si el error no tiene el formato esperado, mostrarlo completo en una sola columna
+                        modeloTablaErrores.addRow(new Object[]{
+                            "N/A", // Línea no disponible
+                            error, // Mostrar el error completo
+                            "N/A"  // Tipo no disponible
+                        });
+                    }
                 }
-             //   areaTextoErrores.setForeground(Color.red);;
-             //   areaTextoErrores.setText(errores.toString());
-                
+                tablaErrores.setModel(modeloTablaErrores);
             }
         });
 
