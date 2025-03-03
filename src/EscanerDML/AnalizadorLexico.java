@@ -54,7 +54,16 @@ public class AnalizadorLexico {
         String patronToken = "\\b(SELECT|FROM|WHERE|AND|OR|CREATE|TABLE|CHAR|NUMERIC|NOT|NULL|"
                 + "CONSTRAINT|KEY|PRIMARY|FOREIGN|REFERENCES|INSERT|INTO|VALUES)\\b|"
                 + ">=|<=|<>|=|>|<|\\*|,|\\(|\\)|'[^']*'|\\d+\\w*|\\w+";
-
+        /*
+         * >=|<=|<>|=|>|< Operadores de comparación
+         * \\* Caracter *
+         * , Coma
+         * \\( y \\) Para paréntesis
+         * '[^']*' Cadenas de texto entre comillas simples
+         * \\d+\\w* Uno o mas dígito y cero o más caracteres de palabra
+         * \\w+ Secuencia de uno o más caracteres de palabra
+         */
+         
         Pattern pattern = Pattern.compile(patronToken);
         Matcher matcher = pattern.matcher(sentenciaSQL);
 
@@ -78,13 +87,13 @@ public class AnalizadorLexico {
             // Clasificar el lexema
             if (PALABRAS_RESERVADAS.contains(lexema.toUpperCase())) {
                 // Es una palabra reservada, no se agrega a identificadores
-            } else if (lexema.matches("\\d+")) {
+            } else if (lexema.matches("\\d+")) { // Uno o más digitos
                 constantes.add(new Constante(lexema, linea));
-            } else if (lexema.matches("'[^']*'")) {
+            } else if (lexema.matches("'[^']*'")) { //Cadenas de texto entre comillas simples
                 constantes.add(new Constante(lexema, linea));
-            } else  if (lexema.matches("\\w+")) {
+            } else  if (lexema.matches("\\w+")) { //Uno o más caracteres de palabra
                 // Es un identificador 
-                if (lexema.matches("^\\d.*")) {
+                if (lexema.matches("^\\d.*")) { //Comienza con numero al principio de la cadena
                     // Identificador que comienza con un número (inválido)
                     errores.add("Línea " + linea + ": '" + lexema + "' : Error de sintaxis. Identificador inválido (no puede comenzar con un número)");
                 } else {
@@ -111,29 +120,21 @@ public class AnalizadorLexico {
     }
     
     private boolean esOperador(String token) {
-        return token.matches("=|>|<|>=|<=|<>");
+        return token.matches("=|>|<|>=|<=|<>"); //Operadores 
     }
     
     private void verificarIdentificadoresEntreComillas(String sentenciaSQL, int linea) {
         // Primero, verifica los identificadores entre comillas dobles
         verificarIdentificadoresEntreComillasDobles(sentenciaSQL, linea);
         
-        // Ahora verifica los identificadores entre comillas simples
-        // Esto es complicado porque necesitamos distinguir entre constantes de cadena válidas
-        // e identificadores incorrectamente colocados entre comillas
-        
-        Pattern patronComillasSimples = Pattern.compile("'([^']*)'");
+        Pattern patronComillasSimples = Pattern.compile("'([^']*)'"); //cadenas de texto en comillas simples
         Matcher matcherComillasSimples = patronComillasSimples.matcher(sentenciaSQL);
         
         while (matcherComillasSimples.find()) {
             String contenido = matcherComillasSimples.group(1); // Contenido entre comillas simples
             
-            // Si el contenido coincide con un patrón de identificador (solo letras, números y guiones bajos)
-            // y no contiene espacios o caracteres especiales, podría ser un identificador
             if (contenido.matches("^[a-zA-Z]\\w*$") && !contenido.contains(" ")) {
-                // Verifica si se usa en un contexto donde se esperaría una constante de cadena
-                // Por ejemplo, después de un operador como =, <, >, etc.
-                
+                // "^[a-zA-Z]\\w*$" Validar nombres de identificadores
                 int posicionInicio = matcherComillasSimples.start();
                 boolean esConstanteEsperada = false;
                 
@@ -160,7 +161,7 @@ public class AnalizadorLexico {
     
     private void verificarIdentificadoresEntreComillasDobles(String sentenciaSQL, int linea) {
         // Expresión regular para identificar identificadores entre comillas dobles
-        Pattern patronComillasDobles = Pattern.compile("\"([^\"]*)\"");
+        Pattern patronComillasDobles = Pattern.compile("\"([^\"]*)\""); //cadenas de texto en comillas dobles
         Matcher matcherComillasDobles = patronComillasDobles.matcher(sentenciaSQL);
 
         while (matcherComillasDobles.find()) {
@@ -211,7 +212,7 @@ public class AnalizadorLexico {
     }
 
     private void verificarSimbolosDesconocidos(String sentenciaSQL, int linea) {
-        Pattern simbolosDesconocidos = Pattern.compile("[\\$@]");
+        Pattern simbolosDesconocidos = Pattern.compile("[\\$@]"); //Caracteres no validos
         Matcher matcherSimbolos = simbolosDesconocidos.matcher(sentenciaSQL);
         while (matcherSimbolos.find()) {
             errores.add("Línea " + linea + ": '" + matcherSimbolos.group() + "' : Error de sintaxis. Símbolo desconocido");

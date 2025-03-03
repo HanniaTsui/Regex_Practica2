@@ -175,7 +175,7 @@ public class EscanerView extends JFrame {
                             token.getLinea(),
                             token.getLexema(),
                             token.getTipo(),
-                            token.getCodigo()
+                            token.getCodigo(),
                         });
                     }
                     tablaLexica.setModel(modeloTablaLexica);
