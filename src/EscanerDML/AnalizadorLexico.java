@@ -101,13 +101,21 @@ public class AnalizadorLexico {
                     errores.add("Línea " + linea + ": '" + lexema + "' : Error de sintaxis. Identificador inválido (no puede comenzar con un número)");
                 } else {
                     identificadores.add(new Identificador(lexema, linea));
+                    
+                    // Verificar si es una constante después de un operador de comparación
+                    // pero solo si no es parte de un identificador compuesto (con punto)
+                    if (tokenAnterior != null && esOperador(tokenAnterior)) {
+                        // Verificar que el token siguiente no sea un punto o un paréntesis
+                        int currentPos = matcher.start();
+                        String restoSentencia = sentenciaSQL.substring(currentPos + lexema.length()).trim();
+                        
+                        // Si el token no es seguido por un punto o un paréntesis, considéralo como constante alfanumérica
+                        if (!restoSentencia.startsWith(".") && !restoSentencia.startsWith("(")) {
+                            errores.add("Línea " + linea + ": '" + lexema + "' : Error de sintaxis. Constante alfanumérica debe estar entre comillas simples");
+                        }
+                    }
                 }
-                
-                if (tokenAnterior != null && esOperador(tokenAnterior)) {
-                    errores.add("Línea " + linea + ": '" + lexema + "' : Error de sintaxis. Constante alfanumérica debe estar entre comillas simples");
-                }                
-            } 
-            
+            }
             tokenAnterior = lexema;
         }
         verificarIdentificadoresEntreComillas(sentenciaSQL, linea);
