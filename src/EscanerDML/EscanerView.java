@@ -1,6 +1,5 @@
 package EscanerDML;
 
-import java.awt.EventQueue;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -107,11 +106,10 @@ public class EscanerView extends JFrame {
         
         areaTextoErrores = new JTextArea("");
         areaTextoErrores.setEditable(false);
-        areaTextoErrores.setEnabled(false);
         areaTextoErrores.setLineWrap(true);
         areaTextoErrores.setWrapStyleWord(true);
         areaTextoErrores.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        areaTextoErrores.setFont(new Font("Tahoma", Font.PLAIN, 13));
+        areaTextoErrores.setFont(new Font("Tahoma", Font.BOLD, 13));
         areaTextoErrores.setBackground(Color.WHITE);
         
         JScrollPane scrollAreaTextoErrores = new JScrollPane(areaTextoErrores);
@@ -190,7 +188,9 @@ public class EscanerView extends JFrame {
                 for (String error : analizador.getErrores()) {
                     errores.append(error).append("\n");
                 }
+                areaTextoErrores.setForeground(Color.red);;
                 areaTextoErrores.setText(errores.toString());
+                
             }
         });
 
