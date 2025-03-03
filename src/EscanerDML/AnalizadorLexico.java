@@ -45,7 +45,10 @@ public class AnalizadorLexico {
         }
 
         // Expresiones regulares para identificar tokens, identificadores y constantes
-        String patronToken = "(SELECT|FROM|WHERE|AND|OR|>=|<=|<>|=|>|<|\\*|,|\\(|\\)|'[^']*'|\\d+|\\w+|>\\s*=|<\\s*=)";
+        String patronToken = "\\b(SELECT|FROM|WHERE|AND|OR|CREATE|TABLE|CHAR|NUMERIC|NOT|NULL|"
+                + "CONSTRAINT|KEY|PRIMARY|FOREIGN|REFERENCES|INSERT|INTO|VALUES)\\b|"
+                + ">=|<=|<>|=|>|<|\\*|,|\\(|\\)|'[^']*'|\\d+|\\w+";
+
         Pattern pattern = Pattern.compile(patronToken);
         Matcher matcher = pattern.matcher(sentenciaSQL);
 
@@ -75,14 +78,16 @@ public class AnalizadorLexico {
             } else if (lexema.matches("'[^']*'")) {
                 // Es una constante alfanumérica (cadena entre comillas simples)
                 constantes.add(new Constante(lexema, linea));
-            } else if (lexema.matches("\\w+")) {
+            } else  if (lexema.matches("\\w+")) {
                 // Es un identificador
-                if (lexema.matches("\\d.*")) {
+                if (lexema.matches("^\\d.*")) {
                     // Identificador que comienza con un número (inválido)
                     errores.add("Línea " + linea + ": '" + lexema + "' : Identificador inválido (no puede comenzar con un número)");
                 } else {
                     identificadores.add(new Identificador(lexema, linea));
                 }
+            
+
             }
         }
 
@@ -146,12 +151,18 @@ public class AnalizadorLexico {
 
     private void verificarPalabrasReservadasMalEscritas() {
         for (Token token : tokens) {
-            // Verificar si el lexema es similar a una palabra reservada pero no coincide exactamente
-            if (esPosiblePalabraReservadaMalEscrita(token.getLexema())) {
-                errores.add("Línea " + token.getLinea() + ": '" + token.getLexema() + "' : Palabra reservada mal escrita");
+            String lexema = token.getLexema().toUpperCase();
+            if (!PALABRAS_RESERVADAS.contains(lexema)) {
+                for (String palabraReservada : PALABRAS_RESERVADAS) {
+                    if (calcularDistanciaLevenshtein(lexema, palabraReservada) == 1) {
+                        errores.add("Línea " + token.getLinea() + ": '" + lexema + ": Error palabra reservada mal escrita " + palabraReservada);
+                        break;
+                    }
+                }
             }
         }
     }
+
 
     private boolean esPosiblePalabraReservadaMalEscrita(String lexema) {
         // Convertir el lexema a mayúsculas para comparación insensible a mayúsculas/minúsculas
