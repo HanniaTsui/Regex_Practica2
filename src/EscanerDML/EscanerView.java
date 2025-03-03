@@ -60,7 +60,7 @@ public class EscanerView extends JFrame {
 
         areaTexto = new JTextArea(sentenciaSQL);
         areaTexto.setFont(new Font("Tahoma", Font.PLAIN, 13));
-        areaTexto.setBackground(Color.WHITE);
+        areaTexto.setBackground(Color.WHITE);    
         areaTexto.setLineWrap(true);
         areaTexto.setWrapStyleWord(true);
         areaTexto.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -215,8 +215,6 @@ public class EscanerView extends JFrame {
                 }
             }
         });
-
-
         botonLimpiar.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 areaTexto.setText("");

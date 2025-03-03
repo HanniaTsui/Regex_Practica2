@@ -60,6 +60,7 @@ public class AnalizadorLexico {
 
         int linea = 1;
         int posicionInicio = 0;
+        String tokenAnterior =  null;
 
         while (matcher.find()) {
             String lexema = matcher.group();
@@ -81,15 +82,23 @@ public class AnalizadorLexico {
                 constantes.add(new Constante(lexema, linea));
             } else if (lexema.matches("'[^']*'")) {
                 constantes.add(new Constante(lexema, linea));
-            } else if (lexema.matches("\\w+")) {
+            } else  if (lexema.matches("\\w+")) {
+                // Es un identificador 
                 if (lexema.matches("^\\d.*")) {
+                    // Identificador que comienza con un número (inválido)
                     errores.add("Línea " + linea + ": '" + lexema + "' : Identificador inválido (no puede comenzar con un número)");
                 } else {
                     identificadores.add(new Identificador(lexema, linea));
                 }
-            }
+                
+                if (tokenAnterior != null && esOperador(tokenAnterior)) {
+                    errores.add("Línea " + linea + ": '" + lexema + "' : Error constante alfanumérica debe estar entre comillas simples");
+                }                
+            } 
+            
+            tokenAnterior = lexema;
         }
-
+        verificarIdentificadoresEntreComillasDobles(sentenciaSQL, linea);
         verificarSimbolosDesconocidos(sentenciaSQL, linea);
         verificarCadenasMalFormateadas(sentenciaSQL, linea);
         verificarPalabrasReservadasMalEscritas();
@@ -100,6 +109,22 @@ public class AnalizadorLexico {
             errores.add("Error léxico: La sentencia SQL no contiene tokens válidos.");
         }
     }
+    
+    private boolean esOperador(String token) {
+        return token.matches("=|>|<|>=|<=|<>");
+    }
+    private void verificarIdentificadoresEntreComillasDobles(String sentenciaSQL, int linea) {
+        // Expresión regular para identificar identificadores entre comillas dobles
+        Pattern patronComillasDobles = Pattern.compile("\"([^\"]*)\"");
+        Matcher matcherComillasDobles = patronComillasDobles.matcher(sentenciaSQL);
+
+        while (matcherComillasDobles.find()) {
+            String lexema = matcherComillasDobles.group(1); // Extraer el contenido entre comillas dobles
+            if (lexema.matches("\\w+")) { // Verificar si es un identificador válido
+                errores.add("Línea " + linea + ": '\"" + lexema + "\"' : Identificador no debe ir entre comillas dobles");
+            }
+        }
+    }  
 
 
     private void verificarCadenasMalFormateadas(String sentenciaSQL, int linea) {
