@@ -34,13 +34,13 @@ public class AnalizadorLexico {
         identificadores.clear();
         constantes.clear();
         errores.clear();
-
-        // Contar el número de líneas en la sentencia SQL
-        int totalLineas = sentenciaSQL.split("\n").length;
-
+        
+        // Dividir la sentencia SQL en líneas
+        String[] lineas = sentenciaSQL.split("\n");
+        
         // Verificar si la sentencia SQL termina con ';'
         if (!sentenciaSQL.trim().endsWith(";")) {
-            errores.add("Línea " + totalLineas + ": La sentencia no termina con ';' : Error de sintaxis");
+            errores.add("Línea " + lineas.length + ": La sentencia no termina con ';' : Error de sintaxis");
         } else {
             sentenciaSQL = sentenciaSQL.trim().substring(0, sentenciaSQL.trim().length() - 1);
         }
@@ -49,7 +49,6 @@ public class AnalizadorLexico {
         String primeraPalabra = sentenciaSQL.trim().split("\\s+")[0].toUpperCase();
         if (!PALABRAS_RESERVADAS.contains(primeraPalabra)) {
             errores.add("Línea 1: La sentencia debe comenzar con una palabra clave válida : Error de sintaxis");
-            
         }
 
         // Expresiones regulares para identificar tokens, identificadores y constantes
@@ -65,26 +64,28 @@ public class AnalizadorLexico {
          * \\d+\\w* Uno o mas dígito y cero o más caracteres de palabra
          * \\w+ Secuencia de uno o más caracteres de palabra
          */
-         
         Pattern pattern = Pattern.compile(patronToken);
         Matcher matcher = pattern.matcher(sentenciaSQL);
 
         int linea = 1;
         int posicionInicio = 0;
-        String tokenAnterior =  null;
+        String tokenAnterior = null;
 
         while (matcher.find()) {
             String lexema = matcher.group();
+            
+            // Determinar la línea actual basándonos en la posición del lexema en el arreglo de líneas
+            int posicionLexema = matcher.start();
+            for (int i = 0; i < lineas.length; i++) {
+                if (posicionLexema < lineas[i].length()) {
+                    linea = i + 1;
+                    break;
+                }
+                posicionLexema -= lineas[i].length() + 1; // +1 para el salto de línea
+            }
+            
             Token token = new Token(lexema, linea);
             tokens.add(token);
-
-            // Contar los saltos de línea antes del lexema actual
-            for (int i = posicionInicio; i < matcher.start(); i++) {
-                if (sentenciaSQL.charAt(i) == '\n') {
-                    linea++;
-                }
-            }     
-            posicionInicio = matcher.end();
 
             // Clasificar el lexema
             if (PALABRAS_RESERVADAS.contains(lexema.toUpperCase())) {
@@ -93,7 +94,7 @@ public class AnalizadorLexico {
                 constantes.add(new Constante(lexema, linea));
             } else if (lexema.matches("'[^']*'")) { //Cadenas de texto entre comillas simples
                 constantes.add(new Constante(lexema, linea));
-            } else  if (lexema.matches("\\w+")) { //Uno o más caracteres de palabra
+            } else if (lexema.matches("\\w+")) { //Uno o más caracteres de palabra
                 // Es un identificador 
                 if (lexema.matches("^\\d.*")) { //Comienza con numero al principio de la cadena
                     // Identificador que comienza con un número (inválido)
