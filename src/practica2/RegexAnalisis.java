@@ -18,7 +18,7 @@ public class RegexAnalisis {
             for (String palabra : palabras) {
                 // Eliminar comas o puntos al final de la palabra (antes de un espacio)
                 palabra = palabra.replaceAll("[.,]$", "");
-
+  
                 if (contieneDigito(palabra)) {
                     if (esNumeroValido(palabra)) {
                         String tipo = clasificarNumero(palabra);

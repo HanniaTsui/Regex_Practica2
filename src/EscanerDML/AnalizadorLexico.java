@@ -2,7 +2,9 @@ package EscanerDML;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -81,7 +83,7 @@ public class AnalizadorLexico {
                 if (sentenciaSQL.charAt(i) == '\n') {
                     linea++;
                 }
-            }
+            }     
             posicionInicio = matcher.end();
 
             // Clasificar el lexema
@@ -383,6 +385,9 @@ public class AnalizadorLexico {
     public static class Token {
         private String lexema;
         private int linea;
+        private static int contadorIdentificadores = 401;
+        private static int contadorConstantes = 600;
+        private static Map<String, Integer> identificadoresMap = new HashMap<>();
 
         public Token(String lexema, int linea) {
             this.lexema = lexema;
@@ -416,29 +421,53 @@ public class AnalizadorLexico {
             }
         }
 
+        
         public int getCodigo() {
-            // Definir el código según el lexema
-            switch (lexema.toUpperCase()) {
-                case "SELECT": return 10;
-                case "FROM": return 11;
-                case "WHERE": return 12;
-                case "IN": return 13;
-                case "AND": return 14;
-                case "OR": return 15;
-                case "CREATE": return 16;
-                case "TABLE": return 17;
-                case "CHAR": return 18;
-                case "NUMERIC": return 19;
-                case "NOT": return 20;
-                case "NULL": return 21;
-                case "CONSTRAINT": return 22;
-                case "KEY": return 23;
-                case "PRIMARY": return 24;
-                case "FOREIGN": return 25;
-                case "REFERENCES": return 26;
-                case "INSERT": return 27;
-                case "INTO": return 28;
-                case "VALUES": return 29;
+            // Primero verificar si es una palabra reservada
+            if (PALABRAS_RESERVADAS.contains(lexema.toUpperCase())) {
+                // Si es una palabra reservada, retornamos su código correspondiente
+                switch (lexema.toUpperCase()) {
+                    case "SELECT": return 10;
+                    case "FROM": return 11;
+                    case "WHERE": return 12;
+                    case "IN": return 13;
+                    case "AND": return 14;
+                    case "OR": return 15;
+                    case "CREATE": return 16;
+                    case "TABLE": return 17;
+                    case "CHAR": return 18;
+                    case "NUMERIC": return 19;
+                    case "NOT": return 20;
+                    case "NULL": return 21;
+                    case "CONSTRAINT": return 22;
+                    case "KEY": return 23;
+                    case "PRIMARY": return 24;
+                    case "FOREIGN": return 25;
+                    case "REFERENCES": return 26;
+                    case "INSERT": return 27;
+                    case "INTO": return 28;
+                    case "VALUES": return 29;
+                    default: return 0;
+                }
+            }
+
+            if (lexema.matches("'[^']*'") || lexema.matches("\\d+")) {
+                return contadorConstantes++; // Asigna el código para constante (numérica o alfanumérica)
+            }
+            // Si no es una palabra reservada, asignamos un código único a los identificadores
+            if (lexema.matches("\\w+")) {
+            	if (identificadoresMap.containsKey(lexema)) {
+                    return identificadoresMap.get(lexema); // Si ya existe, devolver el código existente
+                } else {
+                    // Si no existe, asignar un nuevo código y almacenarlo en el mapa
+                    int codigo = contadorIdentificadores++;
+                    identificadoresMap.put(lexema, codigo);
+                    return codigo;
+                }
+            }
+            
+            // Si no es ninguna de las anteriores, asignamos el código según el lexema
+            switch (lexema) {
                 case ",": return 50;
                 case ".": return 51;
                 case "(": return 52;
@@ -461,6 +490,8 @@ public class AnalizadorLexico {
     public static class Identificador {
         private String nombre;
         private int linea;
+        private static Map<String, Integer> identificadoresMap = new HashMap<>(); // Mapa para almacenar identificadores
+        private static int contadorIdentificadores = 401;
 
         public Identificador(String nombre, int linea) {
             this.nombre = nombre;
@@ -476,8 +507,14 @@ public class AnalizadorLexico {
         }
 
         public int getValor() {
-            // Asignar un valor único a cada identificador
-            return 401 + identificadores.indexOf(this);
+        	if (identificadoresMap.containsKey(nombre)) {
+                return identificadoresMap.get(nombre); // Si ya existe, devolver el código existente
+            } else {
+                // Si no existe, asignar un nuevo código
+                int codigo = contadorIdentificadores++;
+                identificadoresMap.put(nombre, codigo); // Guardar el identificador con su código
+                return codigo;
+            }
         }
     }
 
