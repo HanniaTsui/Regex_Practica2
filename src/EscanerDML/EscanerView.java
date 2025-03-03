@@ -124,65 +124,14 @@ public class EscanerView extends JFrame {
                 AnalizadorLexico analizador = new AnalizadorLexico();
                 analizador.analizar(sentenciaSQL);
 
-                // Mostrar tokens en la tabla léxica
-                DefaultTableModel modeloTablaLexica = new DefaultTableModel();
-                modeloTablaLexica.addColumn("No.");
-                modeloTablaLexica.addColumn("Línea");
-                modeloTablaLexica.addColumn("TOKEN");
-                modeloTablaLexica.addColumn("Tipo");
-                modeloTablaLexica.addColumn("Código");
-
-                int contador = 1;
-                for (AnalizadorLexico.Token token : analizador.getTokens()) {
-                    modeloTablaLexica.addRow(new Object[]{
-                        contador++,
-                        token.getLinea(),
-                        token.getLexema(),
-                        token.getTipo(),
-                        token.getCodigo()
-                    });
-                }
-                tablaLexica.setModel(modeloTablaLexica);
-
-                // Mostrar identificadores en la tabla de identificadores
-                DefaultTableModel modeloTablaIdentificadores = new DefaultTableModel();
-                modeloTablaIdentificadores.addColumn("Identificador");
-                modeloTablaIdentificadores.addColumn("Valor");
-                modeloTablaIdentificadores.addColumn("Línea");
-
-                for (AnalizadorLexico.Identificador identificador : analizador.getIdentificadores()) {
-                    modeloTablaIdentificadores.addRow(new Object[]{
-                        identificador.getNombre(),
-                        identificador.getValor(),
-                        identificador.getLinea()
-                    });
-                }
-                tablaIdentificadores.setModel(modeloTablaIdentificadores);
-
-                // Mostrar constantes en la tabla de constantes
-                DefaultTableModel modeloTablaConstantes = new DefaultTableModel();
-                modeloTablaConstantes.addColumn("No.");
-                modeloTablaConstantes.addColumn("Constante");
-                modeloTablaConstantes.addColumn("Tipo");
-                modeloTablaConstantes.addColumn("Valor");
-
-                contador = 1;
-                for (AnalizadorLexico.Constante constante : analizador.getConstantes()) {
-                    modeloTablaConstantes.addRow(new Object[]{
-                        contador++,
-                        constante.getValor(),
-                        constante.getTipo(),
-                        constante.getCodigo()
-                    });
-                }
-                tablaConstantes.setModel(modeloTablaConstantes);
-
-             // Mostrar errores en la tabla de errores
+                // Limpiar las tablas antes de agregar nuevos datos
                 DefaultTableModel modeloTablaErrores = new DefaultTableModel();
                 modeloTablaErrores.addColumn("No. de línea");
                 modeloTablaErrores.addColumn("Lexema inválido");
                 modeloTablaErrores.addColumn("Tipo");
+                tablaErrores.setModel(modeloTablaErrores);
 
+                boolean hayErrores = false;
                 for (String error : analizador.getErrores()) {
                     String[] partesError = error.split(":");
                     if (partesError.length >= 3) { // Verificar que hay al menos 3 partes
@@ -191,6 +140,7 @@ public class EscanerView extends JFrame {
                             partesError[1], // Lexema inválido
                             partesError[2]  // Tipo de error
                         });
+                        hayErrores = true;
                     } else {
                         // Si el error no tiene el formato esperado, mostrarlo completo en una sola columna
                         modeloTablaErrores.addRow(new Object[]{
@@ -198,11 +148,74 @@ public class EscanerView extends JFrame {
                             error, // Mostrar el error completo
                             "N/A"  // Tipo no disponible
                         });
+                        hayErrores = true;
                     }
                 }
-                tablaErrores.setModel(modeloTablaErrores);
+
+                if (hayErrores) {
+                    // Mostrar solo la tabla de errores
+                    tablaErrores.setModel(modeloTablaErrores);
+                    tablaLexica.setModel(new DefaultTableModel());
+                    tablaIdentificadores.setModel(new DefaultTableModel());
+                    tablaConstantes.setModel(new DefaultTableModel());
+                } else {
+                    // Si no hay errores, mostrar las otras tablas
+                    // Mostrar tokens en la tabla léxica
+                    DefaultTableModel modeloTablaLexica = new DefaultTableModel();
+                    modeloTablaLexica.addColumn("No.");
+                    modeloTablaLexica.addColumn("Línea");
+                    modeloTablaLexica.addColumn("TOKEN");
+                    modeloTablaLexica.addColumn("Tipo");
+                    modeloTablaLexica.addColumn("Código");
+
+                    int contador = 1;
+                    for (AnalizadorLexico.Token token : analizador.getTokens()) {
+                        modeloTablaLexica.addRow(new Object[]{
+                            contador++,
+                            token.getLinea(),
+                            token.getLexema(),
+                            token.getTipo(),
+                            token.getCodigo()
+                        });
+                    }
+                    tablaLexica.setModel(modeloTablaLexica);
+
+                    // Mostrar identificadores en la tabla de identificadores
+                    DefaultTableModel modeloTablaIdentificadores = new DefaultTableModel();
+                    modeloTablaIdentificadores.addColumn("Identificador");
+                    modeloTablaIdentificadores.addColumn("Valor");
+                    modeloTablaIdentificadores.addColumn("Línea");
+
+                    for (AnalizadorLexico.Identificador identificador : analizador.getIdentificadores()) {
+                        modeloTablaIdentificadores.addRow(new Object[]{
+                            identificador.getNombre(),
+                            identificador.getValor(),
+                            identificador.getLinea()
+                        });
+                    }
+                    tablaIdentificadores.setModel(modeloTablaIdentificadores);
+
+                    // Mostrar constantes en la tabla de constantes
+                    DefaultTableModel modeloTablaConstantes = new DefaultTableModel();
+                    modeloTablaConstantes.addColumn("No.");
+                    modeloTablaConstantes.addColumn("Constante");
+                    modeloTablaConstantes.addColumn("Tipo");
+                    modeloTablaConstantes.addColumn("Valor");
+
+                    contador = 1;
+                    for (AnalizadorLexico.Constante constante : analizador.getConstantes()) {
+                        modeloTablaConstantes.addRow(new Object[]{
+                            contador++,
+                            constante.getValor(),
+                            constante.getTipo(),
+                            constante.getCodigo()
+                        });
+                    }
+                    tablaConstantes.setModel(modeloTablaConstantes);
+                }
             }
         });
+
 
         botonLimpiar.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {

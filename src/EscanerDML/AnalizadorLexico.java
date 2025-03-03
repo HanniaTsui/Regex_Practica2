@@ -40,8 +40,14 @@ public class AnalizadorLexico {
         if (!sentenciaSQL.trim().endsWith(";")) {
             errores.add("Línea " + totalLineas + ": La sentencia no termina con ';' : Error de sintaxis");
         } else {
-            // Eliminar el punto y coma al final de la sentencia para evitar errores en el análisis léxico
             sentenciaSQL = sentenciaSQL.trim().substring(0, sentenciaSQL.trim().length() - 1);
+        }
+
+        // Validar que la sentencia inicie con una palabra reservada
+        String primeraPalabra = sentenciaSQL.trim().split("\\s+")[0].toUpperCase();
+        if (!PALABRAS_RESERVADAS.contains(primeraPalabra)) {
+            errores.add("Línea 1: La sentencia debe comenzar con una palabra clave válida : Error de sintaxis");
+            
         }
 
         // Expresiones regulares para identificar tokens, identificadores y constantes
@@ -52,10 +58,9 @@ public class AnalizadorLexico {
         Pattern pattern = Pattern.compile(patronToken);
         Matcher matcher = pattern.matcher(sentenciaSQL);
 
-        int linea = 1; 
+        int linea = 1;
         int posicionInicio = 0;
 
-        // Recorrer la sentencia SQL para contar los saltos de línea
         while (matcher.find()) {
             String lexema = matcher.group();
             Token token = new Token(lexema, linea);
@@ -73,35 +78,29 @@ public class AnalizadorLexico {
             if (PALABRAS_RESERVADAS.contains(lexema.toUpperCase())) {
                 // Es una palabra reservada, no se agrega a identificadores
             } else if (lexema.matches("\\d+")) {
-                // Es una constante numérica
                 constantes.add(new Constante(lexema, linea));
             } else if (lexema.matches("'[^']*'")) {
-                // Es una constante alfanumérica (cadena entre comillas simples)
                 constantes.add(new Constante(lexema, linea));
-            } else  if (lexema.matches("\\w+")) {
-                // Es un identificador
+            } else if (lexema.matches("\\w+")) {
                 if (lexema.matches("^\\d.*")) {
-                    // Identificador que comienza con un número (inválido)
                     errores.add("Línea " + linea + ": '" + lexema + "' : Identificador inválido (no puede comenzar con un número)");
                 } else {
                     identificadores.add(new Identificador(lexema, linea));
                 }
-            
-
             }
         }
 
-        // Verificar errores léxicos
         verificarSimbolosDesconocidos(sentenciaSQL, linea);
         verificarCadenasMalFormateadas(sentenciaSQL, linea);
         verificarPalabrasReservadasMalEscritas();
         verificarOperadoresNoValidos(sentenciaSQL, linea);
-
-        // Si no hay tokens válidos, agregar un error
+        verificarComasEntreIdentificadores();
+        verificarAgrupacionCondiciones();
         if (tokens.isEmpty()) {
             errores.add("Error léxico: La sentencia SQL no contiene tokens válidos.");
         }
     }
+
 
     private void verificarCadenasMalFormateadas(String sentenciaSQL, int linea) {
         boolean dentroDeCadena = false; // Indica si estamos dentro de una cadena
@@ -143,7 +142,7 @@ public class AnalizadorLexico {
     }
 
     private void verificarSimbolosDesconocidos(String sentenciaSQL, int linea) {
-        Pattern simbolosDesconocidos = Pattern.compile("[#\\$@]");
+        Pattern simbolosDesconocidos = Pattern.compile("[\\$@]");
         Matcher matcherSimbolos = simbolosDesconocidos.matcher(sentenciaSQL);
         while (matcherSimbolos.find()) {
             errores.add("Línea " + linea + ": '" + matcherSimbolos.group() + "' : Símbolo desconocido");
@@ -156,37 +155,21 @@ public class AnalizadorLexico {
             String lexema = token.getLexema().toUpperCase();
             if (!PALABRAS_RESERVADAS.contains(lexema)) {
                 for (String palabraReservada : PALABRAS_RESERVADAS) {
+                    // Comprobar si el lexema empieza con una palabra reservada
+                    if (lexema.startsWith(palabraReservada)) {
+                        errores.add("Línea " + token.getLinea() + ": '" + lexema + "': Error palabra reservada mal escrita, debería ser '" + palabraReservada + "'");
+                        System.out.println("Línea " + token.getLinea() + ": '" + lexema + "': Error de sintaxis. Palabra reservada mal escrita, debería ser '" + palabraReservada + "'");
+                        break;
+                    }
+                    // Usar la distancia de Levenshtein como validación adicional
                     if (calcularDistanciaLevenshtein(lexema, palabraReservada) == 1) {
-                        errores.add("Línea " + token.getLinea() + ": '" + lexema + ": Error palabra reservada mal escrita " + palabraReservada);
-                        System.out.println("Línea " + token.getLinea() + ": '" + lexema + ": Error palabra reservada mal escrita " + palabraReservada);
+                        errores.add("Línea " + token.getLinea() + ": '" + lexema + "': Error de sintaxis. Palabra reservada mal escrita, debería ser '" + palabraReservada + "'");
+                        System.out.println("Línea " + token.getLinea() + ": '" + lexema + "': Error palabraalabra reservada mal escrita, debería ser '" + palabraReservada + "'");
                         break;
                     }
                 }
             }
         }
-    }
-
-
-    private boolean esPosiblePalabraReservadaMalEscrita(String lexema) {
-        // Convertir el lexema a mayúsculas para comparación insensible a mayúsculas/minúsculas
-        String lexemaMayusculas = lexema.toUpperCase();
-
-        // Excluir operadores y constantes numéricas de la validación
-        if (lexema.matches("=|>|<|>=|<=|<>") || lexema.matches("\\d+")) {
-            return false; // No es una palabra reservada mal escrita
-        }
-
-        // Verificar si el lexema es similar a una palabra reservada pero no coincide exactamente
-        for (String palabraReservada : PALABRAS_RESERVADAS) {
-            if (lexemaMayusculas.equals(palabraReservada)) {
-                return false; // Coincide exactamente, no es un error
-            }
-            if (calcularDistanciaLevenshtein(lexemaMayusculas, palabraReservada) <= 1) {
-                return true; // Es similar pero no coincide, probablemente mal escrita
-            }
-
-        }
-        return false;
     }
 
     private int calcularDistanciaLevenshtein(String s1, String s2) {
@@ -208,6 +191,105 @@ public class AnalizadorLexico {
             }
         }
         return dp[s1.length()][s2.length()];
+    }
+    private void verificarComasEntreIdentificadores() {
+        boolean enClausulaSelect = false; // Indica si estamos en la cláusula SELECT
+        boolean enClausulaFrom = false;  // Indica si estamos en la cláusula FROM
+
+        for (int i = 0; i < tokens.size(); i++) {
+            Token tokenActual = tokens.get(i);
+
+            // Verificar si estamos en la cláusula SELECT
+            if (tokenActual.getLexema().equalsIgnoreCase("SELECT")) {
+                enClausulaSelect = true;
+                enClausulaFrom = false;
+            }
+            // Verificar si estamos en la cláusula FROM
+            else if (tokenActual.getLexema().equalsIgnoreCase("FROM")) {
+                enClausulaSelect = false;
+                enClausulaFrom = true;
+            }
+            // Verificar si estamos en la cláusula WHERE u otra cláusula
+            else if (tokenActual.getLexema().equalsIgnoreCase("WHERE") || 
+                     tokenActual.getLexema().equalsIgnoreCase("AND") || 
+                     tokenActual.getLexema().equalsIgnoreCase("OR")) {
+                enClausulaSelect = false;
+                enClausulaFrom = false;
+
+                // Verificar si hay una coma antes de la palabra reservada
+                if (i > 0) {
+                    Token tokenAnterior = tokens.get(i - 1);
+                    if (tokenAnterior.getLexema().equals(",")) {
+                        errores.add("Línea " + tokenActual.getLinea() + ": Coma incorrecta antes de '" + tokenActual.getLexema() + "' : Error de sintaxis");
+                    }
+                }
+            }
+
+            // Verificar comas solo en las cláusulas SELECT y FROM
+            if (enClausulaSelect || enClausulaFrom) {
+                if (tokenActual.getTipo() == 4) { // Si es un identificador
+                    // Verificar si el siguiente token no es una coma y no es el final de la cláusula
+                    if (i < tokens.size() - 1) {
+                        Token tokenSiguiente = tokens.get(i + 1);
+                        // Si el siguiente token no es una coma y no es una palabra reservada (fin de la cláusula)
+                        if (!tokenSiguiente.getLexema().equals(",") && 
+                            !PALABRAS_RESERVADAS.contains(tokenSiguiente.getLexema().toUpperCase())) {
+                            errores.add("Línea " + tokenActual.getLinea() + ": Falta una coma después de '" + tokenActual.getLexema() + "' : Error de sintaxis");
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private void verificarAgrupacionCondiciones() {
+        boolean enClausulaWhere = false; // Indica si estamos en la cláusula WHERE
+        int nivelAgrupacion = 0; // Nivel de anidamiento de paréntesis
+        boolean tieneAND = false; // Indica si hay un operador AND en la cláusula WHERE
+        boolean tieneOR = false;  // Indica si hay un operador OR en la cláusula WHERE
+
+        for (int i = 0; i < tokens.size(); i++) {
+            Token tokenActual = tokens.get(i);
+
+            // Verificar si estamos en la cláusula WHERE
+            if (tokenActual.getLexema().equalsIgnoreCase("WHERE")) {
+                enClausulaWhere = true;
+            }
+            // Verificar si salimos de la cláusula WHERE
+            else if (enClausulaWhere && tokenActual.getLexema().equalsIgnoreCase(";")) {
+                enClausulaWhere = false;
+            }
+
+            // Verificar paréntesis y operadores en la cláusula WHERE
+            if (enClausulaWhere) {
+                if (tokenActual.getLexema().equals("(")) {
+                    nivelAgrupacion++; // Incrementar el nivel de anidamiento
+                } else if (tokenActual.getLexema().equals(")")) {
+                    nivelAgrupacion--; // Decrementar el nivel de anidamiento
+                    if (nivelAgrupacion < 0) {
+                        errores.add("Línea " + tokenActual.getLinea() + ": Paréntesis de cierre sin apertura : Error de sintaxis");
+                    }
+                }
+
+                // Verificar si hay un operador AND u OR
+                if (tokenActual.getLexema().equalsIgnoreCase("AND")) {
+                    tieneAND = true;
+                } else if (tokenActual.getLexema().equalsIgnoreCase("OR")) {
+                    tieneOR = true;
+                }
+
+                // Verificar si hay una mezcla de AND y OR sin paréntesis
+                if (tieneAND && tieneOR && nivelAgrupacion == 0) {
+                    errores.add("Línea " + tokenActual.getLinea() + ": Falta agrupar condiciones con paréntesis debido a la mezcla de AND y OR : Error de sintaxis");
+                    tieneAND = false; // Reiniciar para evitar mensajes duplicados
+                    tieneOR = false;
+                }
+            }
+        }
+
+        // Verificar si todos los paréntesis están cerrados
+        if (nivelAgrupacion != 0) {
+            errores.add("Línea 1: Paréntesis sin cerrar : Error de sintaxis");
+        }
     }
     public List<Token> getTokens() {
         return tokens;
