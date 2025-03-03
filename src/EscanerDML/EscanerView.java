@@ -8,7 +8,6 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.util.List;
 import java.awt.event.ActionEvent;
-import javax.swing.border.LineBorder;
 
 public class EscanerView extends JFrame {
 
@@ -21,12 +20,13 @@ public class EscanerView extends JFrame {
     private JTextArea areaTexto;
     private JButton botonAceptar;
     private JButton botonLimpiar;
+    private JTextArea areaTextoErrores;
 
     public static void main(String[] args) {
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 try {
-                	EscanerView ventana = new EscanerView();
+                    EscanerView ventana = new EscanerView();
                     ventana.setVisible(true);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -42,9 +42,9 @@ public class EscanerView extends JFrame {
         setLocationRelativeTo(null);
 
         String sentenciaSQL = "SELECT ANOMBRE, CALIFICACION, TURNO\r\n"
-        		+ "FROM ALUMNOS, INSCRITOS, MATERIAS, CARRERAS\r\n"
-        		+ "WHERE MNOMBRE=’LENAUT2’ AND TURNO = ‘TM’\r\n"
-        		+ "AND CNOMBRE=’ISC’ AND SEMESTRE=’2023I’ AND CALIFICACION >= 70";
+                + "FROM ALUMNOS, INSCRITOS, MATERIAS, CARRERAS\r\n"
+                + "WHERE MNOMBRE='LENAUT2' AND TURNO = 'TM'\r\n"
+                + "AND CNOMBRE='ISC' AND SEMESTRE='2023I' AND CALIFICACION >= 70";
 
         panelContenido = new JPanel();
         panelContenido.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -105,8 +105,7 @@ public class EscanerView extends JFrame {
         botonLimpiar.setBackground(new Color(49, 59, 255));
         panelContenido.add(botonLimpiar);
         
-        
-        JTextArea areaTextoErrores = new JTextArea("");
+        areaTextoErrores = new JTextArea("");
         areaTextoErrores.setEditable(false);
         areaTextoErrores.setEnabled(false);
         areaTextoErrores.setLineWrap(true);
@@ -114,7 +113,6 @@ public class EscanerView extends JFrame {
         areaTextoErrores.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         areaTextoErrores.setFont(new Font("Tahoma", Font.PLAIN, 13));
         areaTextoErrores.setBackground(Color.WHITE);
-        panelContenido.add(areaTextoErrores);
         
         JScrollPane scrollAreaTextoErrores = new JScrollPane(areaTextoErrores);
         scrollAreaTextoErrores.setBounds(30, 432, 578, 198);
@@ -130,14 +128,79 @@ public class EscanerView extends JFrame {
 
         botonAceptar.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-               
+                String sentenciaSQL = areaTexto.getText();
+                AnalizadorLexico analizador = new AnalizadorLexico();
+                analizador.analizar(sentenciaSQL);
+
+                // Mostrar tokens en la tabla léxica
+                DefaultTableModel modeloTablaLexica = new DefaultTableModel();
+                modeloTablaLexica.addColumn("No.");
+                modeloTablaLexica.addColumn("Línea");
+                modeloTablaLexica.addColumn("TOKEN");
+                modeloTablaLexica.addColumn("Tipo");
+                modeloTablaLexica.addColumn("Código");
+
+                int contador = 1;
+                for (AnalizadorLexico.Token token : analizador.getTokens()) {
+                    modeloTablaLexica.addRow(new Object[]{
+                        contador++,
+                        token.getLinea(),
+                        token.getLexema(),
+                        token.getTipo(),
+                        token.getCodigo()
+                    });
+                }
+                tablaLexica.setModel(modeloTablaLexica);
+
+                // Mostrar identificadores en la tabla de identificadores
+                DefaultTableModel modeloTablaIdentificadores = new DefaultTableModel();
+                modeloTablaIdentificadores.addColumn("Identificador");
+                modeloTablaIdentificadores.addColumn("Valor");
+                modeloTablaIdentificadores.addColumn("Línea");
+
+                for (AnalizadorLexico.Identificador identificador : analizador.getIdentificadores()) {
+                    modeloTablaIdentificadores.addRow(new Object[]{
+                        identificador.getNombre(),
+                        identificador.getValor(),
+                        identificador.getLinea()
+                    });
+                }
+                tablaIdentificadores.setModel(modeloTablaIdentificadores);
+
+                // Mostrar constantes en la tabla de constantes
+                DefaultTableModel modeloTablaConstantes = new DefaultTableModel();
+                modeloTablaConstantes.addColumn("No.");
+                modeloTablaConstantes.addColumn("Constante");
+                modeloTablaConstantes.addColumn("Tipo");
+                modeloTablaConstantes.addColumn("Valor");
+
+                contador = 1;
+                for (AnalizadorLexico.Constante constante : analizador.getConstantes()) {
+                    modeloTablaConstantes.addRow(new Object[]{
+                        contador++,
+                        constante.getValor(),
+                        constante.getTipo(),
+                        constante.getCodigo()
+                    });
+                }
+                tablaConstantes.setModel(modeloTablaConstantes);
+
+                // Mostrar errores en el área de texto de errores
+                StringBuilder errores = new StringBuilder();
+                for (String error : analizador.getErrores()) {
+                    errores.append(error).append("\n");
+                }
+                areaTextoErrores.setText(errores.toString());
             }
         });
 
-
         botonLimpiar.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                
+                areaTexto.setText("");
+                tablaLexica.setModel(new DefaultTableModel());
+                tablaIdentificadores.setModel(new DefaultTableModel());
+                tablaConstantes.setModel(new DefaultTableModel());
+                areaTextoErrores.setText("");
             }
         });
     }
