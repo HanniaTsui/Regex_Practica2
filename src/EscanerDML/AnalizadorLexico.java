@@ -38,12 +38,7 @@ public class AnalizadorLexico {
         // Dividir la sentencia SQL en líneas
         String[] lineas = sentenciaSQL.split("\n");
         
-        // Verificar si la sentencia SQL termina con ';'
-        if (!sentenciaSQL.trim().endsWith(";")) {
-            errores.add("Línea " + lineas.length + ": La sentencia no termina con ';' : Error de sintaxis");
-        } else {
-            sentenciaSQL = sentenciaSQL.trim().substring(0, sentenciaSQL.trim().length() - 1);
-        }
+        
 
         // Validar que la sentencia inicie con una palabra reservada
         String primeraPalabra = sentenciaSQL.trim().split("\\s+")[0].toUpperCase();
@@ -52,9 +47,12 @@ public class AnalizadorLexico {
         }
 
         // Expresiones regulares para identificar tokens, identificadores y constantes
+      /*  String patronToken = "\\b(SELECT|FROM|WHERE|AND|OR|CREATE|TABLE|CHAR|NUMERIC|NOT|NULL|"
+                + "CONSTRAINT|KEY|PRIMARY|FOREIGN|REFERENCES|INSERT|INTO|VALUES)\\b|"
+                + ">=|<=|<>|=|>|<|\\*|,|\\(|\\)|'[^']*'|\\d+\\w*|\\w+";*/
         String patronToken = "\\b(SELECT|FROM|WHERE|AND|OR|CREATE|TABLE|CHAR|NUMERIC|NOT|NULL|"
                 + "CONSTRAINT|KEY|PRIMARY|FOREIGN|REFERENCES|INSERT|INTO|VALUES)\\b|"
-                + ">=|<=|<>|=|>|<|\\*|,|\\(|\\)|'[^']*'|\\d+\\w*|\\w+";
+                + ">=|<=|<>|=|>|<|\\*|,|\\(|\\)|'[^']*'|\\d+\\w*|[\\w#]+(\\.[\\w#]+)?";
         /*
          * >=|<=|<>|=|>|< Operadores de comparación
          * \\* Caracter *
@@ -94,7 +92,7 @@ public class AnalizadorLexico {
                 constantes.add(new Constante(lexema, linea));
             } else if (lexema.matches("'[^']*'")) { //Cadenas de texto entre comillas simples
                 constantes.add(new Constante(lexema, linea));
-            } else if (lexema.matches("\\w+")) { //Uno o más caracteres de palabra
+            } else if (lexema.matches("[\\w#]+(\\.[\\w#]+)?")) { //Uno o más caracteres de palabra
                 // Es un identificador 
                 if (lexema.matches("^\\d.*")) { //Comienza con numero al principio de la cadena
                     // Identificador que comienza con un número (inválido)
@@ -415,7 +413,7 @@ public class AnalizadorLexico {
             // Definir el tipo de token según el lexema
             if (PALABRAS_RESERVADAS.contains(lexema.toUpperCase())) {
                 return 1; // Palabras reservadas
-            } else if (lexema.matches("\\w+")) {
+            } else if (lexema.matches("[\\w#]+")) {
                 return 4; // Identificadores
             } else if (lexema.matches("'[^']*'")) {
                 return 6; // Constantes alfanuméricas
@@ -464,7 +462,7 @@ public class AnalizadorLexico {
                 return contadorConstantes++; // Asigna el código para constante (numérica o alfanumérica)
             }
             // Si no es una palabra reservada, asignamos un código único a los identificadores
-            if (lexema.matches("\\w+")) {
+            if (lexema.matches("[\\w#]+")) {
             	if (identificadoresMap.containsKey(lexema)) {
                     return identificadoresMap.get(lexema); // Si ya existe, devolver el código existente
                 } else {
