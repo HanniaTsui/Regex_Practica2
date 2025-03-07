@@ -5,6 +5,9 @@ import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -18,6 +21,11 @@ import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+
+import DML_V2.Analizador_Lexico.Constante;
+import DML_V2.Analizador_Lexico.Identificador;
+import DML_V2.Analizador_Lexico.Token;
+import EscanerDML.AnalizadorLexico;
 
 
 
@@ -132,14 +140,126 @@ public class DML_Vista extends JFrame {
         lblErrores.setBounds(30, 409, 97, 25);
         panelContenido.add(lblErrores);
 
+     // Actualizar el método actionPerformed del botonAceptar en la clase DML_Vista
         botonAceptar.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				// TODO Auto-generated method stub
-				
-			}
-            
-            
+            public void actionPerformed(ActionEvent e) {
+                String sentenciaSQL = areaTexto.getText();
+                Analizador_Lexico analizador = new Analizador_Lexico();
+                analizador.analizar(sentenciaSQL);
+
+                // Limpiar las tablas antes de agregar nuevos datos
+                DefaultTableModel modeloTablaErrores = new DefaultTableModel();
+                modeloTablaErrores.addColumn("No. de línea");
+                modeloTablaErrores.addColumn("Lexema inválido");
+                modeloTablaErrores.addColumn("Tipo");
+                tablaErrores.setModel(modeloTablaErrores);
+
+                boolean hayErrores = false;
+                for (String error : analizador.getErrores()) {
+                    String[] partesError = error.split(":");
+                    if (partesError.length >= 3) { // Verificar que hay al menos 3 partes
+                        modeloTablaErrores.addRow(new Object[]{
+                            partesError[0], // Línea
+                            partesError[1], // Lexema inválido
+                            partesError[2]  // Tipo de error
+                        });
+                        hayErrores = true;
+                    } else {
+                        // Si el error no tiene el formato esperado, mostrarlo completo en una sola columna
+                        modeloTablaErrores.addRow(new Object[]{
+                            "N/A", // Línea no disponible
+                            error, // Mostrar el error completo
+                            "N/A"  // Tipo no disponible
+                        });
+                        hayErrores = true;
+                    }
+                }
+
+                if (hayErrores) {
+                    // Mostrar solo la tabla de errores
+                    tablaErrores.setModel(modeloTablaErrores);
+                    tablaLexica.setModel(new DefaultTableModel());
+                    tablaIdentificadores.setModel(new DefaultTableModel());
+                    tablaConstantes.setModel(new DefaultTableModel());
+                } else {
+                    // Si no hay errores, mostrar las otras tablas
+                    // Mostrar tokens en la tabla léxica
+                    DefaultTableModel modeloTablaLexica = new DefaultTableModel();
+                    modeloTablaLexica.addColumn("No.");
+                    modeloTablaLexica.addColumn("Línea");
+                    modeloTablaLexica.addColumn("TOKEN");
+                    modeloTablaLexica.addColumn("Tipo");
+                    modeloTablaLexica.addColumn("Código");   
+
+                    int contador = 1;
+                    for (Token token : analizador.getTokens()) {
+                        modeloTablaLexica.addRow(new Object[]{
+                            contador++,
+                            token.getLinea(),
+                            token.getLexema(),
+                            token.getTipo(),
+                            token.getCodigo(),
+                        });
+                    }
+                    tablaLexica.setModel(modeloTablaLexica);
+
+                 // Mostrar identificadores en la tabla de identificadores
+                    DefaultTableModel modeloTablaIdentificadores = new DefaultTableModel();
+                    modeloTablaIdentificadores.addColumn("Identificador");
+                    modeloTablaIdentificadores.addColumn("Valor");
+                    modeloTablaIdentificadores.addColumn("Línea");
+
+                    // Mapa temporal para evitar duplicados (clave: valor del identificador, valor: [nombre, líneas])
+                    TreeMap<Integer, String[]> mapaIdentificadores = new TreeMap<>();
+
+                    for (Identificador identificador : analizador.getIdentificadores()) {
+                        String nombre = identificador.getNombre();
+                        int valor = identificador.getValor(); // Se usa como clave para ordenar automáticamente
+                        String linea = Integer.toString(identificador.getLinea()); 
+
+                        if (mapaIdentificadores.containsKey(valor)) {
+                            // Si ya existe, actualizamos la lista de líneas
+                            String[] datos = mapaIdentificadores.get(valor);
+                            if (!datos[1].contains(linea)) { // Evita líneas repetidas
+                                datos[1] += "," + linea;
+                            }
+                        } else {
+                            // Si no existe, lo agregamos normalmente
+                            mapaIdentificadores.put(valor, new String[]{nombre, linea});
+                        }
+                    }
+
+                    // Agregar datos ordenados a la tabla
+                    for (Map.Entry<Integer, String[]> entry : mapaIdentificadores.entrySet()) {
+                        modeloTablaIdentificadores.addRow(new Object[]{
+                            entry.getValue()[0], // Nombre del identificador
+                            entry.getKey(),       // Valor del identificador (ordenado)
+                            entry.getValue()[1]   // Líneas unificadas
+                        });
+                    }
+
+                    tablaIdentificadores.setModel(modeloTablaIdentificadores);
+
+
+                    // Mostrar constantes en la tabla de constantes
+                    DefaultTableModel modeloTablaConstantes = new DefaultTableModel();
+                    modeloTablaConstantes.addColumn("No.");
+                    modeloTablaConstantes.addColumn("Constante");
+                    modeloTablaConstantes.addColumn("Tipo");
+                    modeloTablaConstantes.addColumn("Valor");
+
+                    contador = 1;
+                    for (Constante constante : analizador.getConstantes()) {
+                        modeloTablaConstantes.addRow(new Object[]{
+                            contador++,
+                            constante.getValor(),
+                            constante.getTipo(),
+                            constante.getCodigo()
+                        });
+                    }
+                    tablaConstantes.setModel(modeloTablaConstantes);
+                }
+            }
         });
         botonLimpiar.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
