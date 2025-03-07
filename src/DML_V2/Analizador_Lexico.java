@@ -38,8 +38,6 @@ public class Analizador_Lexico {
         // Dividir la sentencia SQL en líneas
         String[] lineas = sentenciaSQL.split("\n");
         
-        
-
         // Validar que la sentencia inicie con una palabra reservada
         String primeraPalabra = sentenciaSQL.trim().split("\\s+")[0].toUpperCase();
         if (!PALABRAS_RESERVADAS.contains(primeraPalabra)) {
@@ -62,9 +60,13 @@ public class Analizador_Lexico {
          * \\d+\\w* Uno o mas dígito y cero o más caracteres de palabra
          * \\w+ Secuencia de uno o más caracteres de palabra
          */
-        String patronToken = "\\b(SELECT|FROM|WHERE|AND|OR|CREATE|TABLE|CHAR|NUMERIC|NOT|NULL|"
+      /*  String patronToken = "\\b(SELECT|FROM|WHERE|AND|OR|CREATE|TABLE|CHAR|NUMERIC|NOT|NULL|"
                 + "CONSTRAINT|KEY|PRIMARY|FOREIGN|REFERENCES|INSERT|INTO|VALUES)\\b|"
                 + ">=|<=|<>|=|>|<|,\\(\\)|'[^']*'|\\d+\\w*|[A-Za-z][\\w#]*(\\.[A-Za-z][\\w#]*)?";
+     */
+        String patronToken = "\\b(SELECT|FROM|WHERE|AND|OR|CREATE|TABLE|CHAR|NUMERIC|NOT|NULL|"
+                + "CONSTRAINT|KEY|PRIMARY|FOREIGN|REFERENCES|INSERT|INTO|VALUES)\\b|"
+                + ">=|<=|<>|=|>|<|,|\\(|\\)|'[^']*'|\\d+\\w*|[A-Za-z][\\w#]*(\\.[A-Za-z][\\w#]*)?";
         Pattern pattern = Pattern.compile(patronToken);
         Matcher matcher = pattern.matcher(sentenciaSQL);
 
@@ -85,36 +87,35 @@ public class Analizador_Lexico {
                 posicionLexema -= lineas[i].length() + 1; // +1 para el salto de línea
             }
             
-            Token token = new Token(lexema, linea);
-            tokens.add(token);
+            
+            if (lexema.matches("[A-Za-z][\\w#]*(\\.[A-Za-z][\\w#]*)+")) {
+                String[] partes = lexema.split("\\.");
+                for (String parte : partes) {
+                    tokens.add(new Token(parte, linea));
+                    if (parte.matches("[A-Za-z][\\w#]*")) { // Si es un identificador válido
+                        identificadores.add(new Identificador(parte, linea));
+                    }
+                    tokens.add(new Token(".", linea)); // Agregar el delimitador "."
+                }
+                tokens.remove(tokens.size() - 1); // Eliminar el último "." agregado
+            } else {
+                tokens.add(new Token(lexema, linea));
+            }
 
             // Clasificar el lexema
             if (PALABRAS_RESERVADAS.contains(lexema.toUpperCase())) {
                 // Es una palabra reservada, no se agrega a identificadores
-            } else if (lexema.matches("\\d+")) { // Uno o más digitos
+            } else if (lexema.matches("\\d+")) { // Uno o más dígitos
                 constantes.add(new Constante(lexema, linea));
-            } else if (lexema.matches("'[^']*'")) { //Cadenas de texto entre comillas simples
+            } else if (lexema.matches("'[^']*'")) { // Cadenas de texto entre comillas simples
                 constantes.add(new Constante(lexema, linea));
-            } else if (lexema.matches("[\\w#]+(\\.[\\w#]+)?")) { //Uno o más caracteres de palabra
-                // Es un identificador 
-                if (lexema.matches("^\\d.*")) { //Comienza con numero al principio de la cadena
+            } else if (lexema.matches("[\\w#]+(\\.[\\w#]+)?")) { // Uno o más caracteres de palabra
+                // Es un identificador
+                if (lexema.matches("^\\d.*")) { // Comienza con número al principio de la cadena
                     // Identificador que comienza con un número (inválido)
                     errores.add("Línea " + linea + ": '" + lexema + "' : Error de sintaxis. Identificador inválido (no puede comenzar con un número)");
-                } else {
+                } else if (!lexema.contains(".")) { // Solo registrar identificadores simples (sin punto)
                     identificadores.add(new Identificador(lexema, linea));
-                    
-                    // Verificar si es una constante después de un operador de comparación
-                    // pero solo si no es parte de un identificador compuesto (con punto)
-                    /*if (tokenAnterior != null && esOperador(tokenAnterior)) {
-                        // Verificar que el token siguiente no sea un punto o un paréntesis
-                        int currentPos = matcher.start();
-                        String restoSentencia = sentenciaSQL.substring(currentPos + lexema.length()).trim();
-                        
-                        // Si el token no es seguido por un punto o un paréntesis, considéralo como constante alfanumérica
-                        if (!restoSentencia.startsWith(".") && !restoSentencia.startsWith("(")) {
-                            errores.add("Línea " + linea + ": '" + lexema + "' : Error de sintaxis. Constante alfanumérica debe estar entre comillas simples");
-                        }
-                    }*/
                 }
             }
             tokenAnterior = lexema;
@@ -396,7 +397,7 @@ public class Analizador_Lexico {
         private String lexema;
         private int linea;
         private static int contadorIdentificadores = 401;
-        private static int contadorConstantes = 600;
+        private static int contadorConstantes = 601;
         private static Map<String, Integer> identificadoresMap = new HashMap<>();
 
         public Token(String lexema, int linea) {
@@ -424,7 +425,7 @@ public class Analizador_Lexico {
                 return 6; // Constantes alfanuméricas
             } else if (lexema.matches("\\d+")) {
                 return 6; // Constantes numéricas
-            } else if (lexema.matches(",|\\(|\\)|'")) {
+            } else if (lexema.matches(".|,|\\(|\\)|'")) {
                 return 5; // Delimitadores
             } else if (lexema.matches("=|>|<|>=|<=|<>")) {
                 return 8; // Operadores relacionales
