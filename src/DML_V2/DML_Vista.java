@@ -198,11 +198,29 @@ public class DML_Vista extends JFrame {
                             token.getLinea(),
                             token.getLexema(),
                             token.getTipo(),
-                            token.getCodigo(),
+                            token.getCodigo(), 
                         });
                     }
                     tablaLexica.setModel(modeloTablaLexica);
+                /* // Mostrar la tabla léxica en la consola
+                    System.out.println("Tabla Léxica:");
+                    System.out.println("+----+-------+----------------+----------------+--------+");
+                    System.out.println("| No.| Línea | Lexema         | Tipo           | Código |");
+                    System.out.println("+----+-------+----------------+----------------+--------+");
 
+                    for (int i = 0; i < modeloTablaLexica.getRowCount(); i++) {
+                        int numero = (int) modeloTablaLexica.getValueAt(i, 0); // No.
+                        int linea = (int) modeloTablaLexica.getValueAt(i, 1);  // Línea
+                        String lexema = (String) modeloTablaLexica.getValueAt(i, 2); // Lexema
+                        int tipo = (int) modeloTablaLexica.getValueAt(i, 3); // Tipo
+                        int codigo = (int) modeloTablaLexica.getValueAt(i, 4); // Código
+
+                        // Formatear la salida
+                        System.out.printf("| %-2d | %-5d | %-14s | %-14d | %-6d |\n", numero, linea, lexema, tipo, codigo);
+                    }
+
+                    System.out.println("+----+-------+----------------+----------------+--------+");
+*/
                  // Mostrar identificadores en la tabla de identificadores
                     DefaultTableModel modeloTablaIdentificadores = new DefaultTableModel();
                     modeloTablaIdentificadores.addColumn("Identificador");

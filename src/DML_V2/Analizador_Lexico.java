@@ -18,7 +18,7 @@ public class Analizador_Lexico {
     // Lista de palabras reservadas de SQL
     private static final List<String> PALABRAS_RESERVADAS = Arrays.asList(
         "SELECT", "FROM", "WHERE", "AND", "OR", "CREATE", "TABLE", "CHAR", "NUMERIC", "NOT", "NULL",
-        "CONSTRAINT", "KEY", "PRIMARY", "FOREIGN", "REFERENCES", "INSERT", "INTO", "VALUES"
+        "CONSTRAINT", "KEY", "PRIMARY", "FOREIGN", "REFERENCES", "INSERT", "INTO", "VALUES", "IN"
     );
 
     public Analizador_Lexico() {
@@ -30,6 +30,11 @@ public class Analizador_Lexico {
 
     public void analizar(String sentenciaSQL) {
         // Limpiar listas antes de un nuevo análisis
+    	Token.identificadoresMap.clear();
+        Token.contadorIdentificadores = 401;
+    	Identificador.identificadoresMap.clear();
+    	Identificador.contadorIdentificadores = 401;
+    	Token.contadorConstantes = 601;
         tokens.clear();
         identificadores.clear();
         constantes.clear();
@@ -66,7 +71,7 @@ public class Analizador_Lexico {
      */
         String patronToken = "\\b(SELECT|FROM|WHERE|AND|OR|CREATE|TABLE|CHAR|NUMERIC|NOT|NULL|"
                 + "CONSTRAINT|KEY|PRIMARY|FOREIGN|REFERENCES|INSERT|INTO|VALUES)\\b|"
-                + ">=|<=|<>|=|>|<|,|\\(|\\)|'[^']*'|\\d+\\w*|[A-Za-z][\\w#]*(\\.[A-Za-z][\\w#]*)?";
+                + ">=|<=|<>|=|>|<|,|\\(|\\)|\\*|'[^']*'|\\d+\\w*|[A-Za-z][\\w#]*(\\.[A-Za-z][\\w#]*)?";
         Pattern pattern = Pattern.compile(patronToken);
         Matcher matcher = pattern.matcher(sentenciaSQL);
 
@@ -126,7 +131,7 @@ public class Analizador_Lexico {
         verificarPalabrasReservadasMalEscritas();
         verificarOperadoresNoValidos(sentenciaSQL, linea);
         //verificarComasEntreIdentificadores();
-        verificarAgrupacionCondiciones();
+    //    verificarAgrupacionCondiciones();
         if (tokens.isEmpty()) {
             errores.add("Error léxico: La sentencia SQL no contiene tokens válidos.");
         }
@@ -225,14 +230,14 @@ public class Analizador_Lexico {
     }
 
     private void verificarSimbolosDesconocidos(String sentenciaSQL, int linea) {
-        Pattern simbolosDesconocidos = Pattern.compile("[\\$@]"); //Caracteres no validos
+        Pattern simbolosDesconocidos = Pattern.compile("[\\$@%&^`~|\\\\?]"); //Caracteres no validos
         Matcher matcherSimbolos = simbolosDesconocidos.matcher(sentenciaSQL);
         while (matcherSimbolos.find()) {
             errores.add("Línea " + linea + ": '" + matcherSimbolos.group() + "' : Error de sintaxis. Símbolo desconocido");
-            System.out.println("Línea " + linea + ": '" + matcherSimbolos.group() + "' : Símbolo desconocido");
+         //   System.out.println("Línea " + linea + ": '" + matcherSimbolos.group() + "' : Símbolo desconocido");
         }
     }
-
+/*
     private void verificarPalabrasReservadasMalEscritas() {
         for (Token token : tokens) {
             String lexema = token.getLexema().toUpperCase();
@@ -253,7 +258,81 @@ public class Analizador_Lexico {
                 }
             }
         }
+    }*/
+
+    
+    private void verificarPalabrasReservadasMalEscritas() {
+        for (Token token : tokens) {
+            String lexema = token.getLexema().toUpperCase();
+
+            // Solo verificar tokens que sean identificadores
+            if (token.getTipo() == 4) {
+                // Excluir identificadores de una sola letra y aquellos con caracteres especiales (como #)
+                if (lexema.length() > 1 && !lexema.matches(".*[^A-Za-z0-9].*")) {
+                    // Si el lexema no es una palabra reservada exacta
+                    if (!PALABRAS_RESERVADAS.contains(lexema)) {
+                        String palabraMasCercana = null;
+                        int distanciaMinima = Integer.MAX_VALUE;
+
+                        // Buscar la palabra reservada más cercana
+                        for (String palabraReservada : PALABRAS_RESERVADAS) {
+                            // Calcular la distancia de Levenshtein
+                            int distancia = calcularDistanciaLevenshtein(lexema, palabraReservada);
+
+                            // Si la distancia es menor que la mínima encontrada, actualizar
+                            if (distancia < distanciaMinima) {
+                                distanciaMinima = distancia;
+                                palabraMasCercana = palabraReservada;
+                            }
+                        }
+
+                        // Si la distancia mínima es menor o igual a 2 y el lexema tiene una longitud similar, considerar como error
+                        if (distanciaMinima <= 2 && Math.abs(lexema.length() - palabraMasCercana.length()) <= 2) {
+                            errores.add("Línea " + token.getLinea() + ": '" + lexema + "': Error de sintaxis. ¿Quizás quisiste decir '" + palabraMasCercana + "'?");
+                            System.out.println("Línea " + token.getLinea() + ": '" + lexema + "': Error de sintaxis. ¿Quizás quisiste decir '" + palabraMasCercana + "'?");
+                        }
+                    }
+                }
+            }
+        }
     }
+
+    /*
+    private void verificarPalabrasReservadasMalEscritas() {
+        for (Token token : tokens) {
+            String lexema = token.getLexema().toUpperCase();
+
+            // ✅ Verifica si el lexema es una palabra reservada y sáltalo si lo es
+            if (PALABRAS_RESERVADAS.contains(lexema)) {
+                continue; // No lo tratamos como error
+            }
+
+            // 🔍 Verifica que el token sea realmente un identificador antes de continuar
+            if (token.getTipo() == 4) { 
+                // ❌ Excluir identificadores de una sola letra y con caracteres especiales
+                if (lexema.length() > 1 && lexema.matches("^[A-Za-z0-9]+$")) {
+                    String palabraMasCercana = null;
+                    int distanciaMinima = Integer.MAX_VALUE;
+
+                    // 📌 Buscar la palabra reservada más cercana
+                    for (String palabraReservada : PALABRAS_RESERVADAS) {
+                        int distancia = calcularDistanciaLevenshtein(lexema, palabraReservada);
+                        if (distancia < distanciaMinima) {
+                            distanciaMinima = distancia;
+                            palabraMasCercana = palabraReservada;
+                        }
+                    }
+
+                    // 🚨 Solo sugerir si hay un error real (evita sugerencias incorrectas como `IN → AND`)
+                    if (distanciaMinima <= 2 && palabraMasCercana != null 
+                        && Math.abs(lexema.length() - palabraMasCercana.length()) <= 2) {
+                        errores.add("Línea " + token.getLinea() + ": '" + lexema + "': Error de sintaxis. ¿Quizás quisiste decir '" + palabraMasCercana + "'?");
+                        System.out.println("Línea " + token.getLinea() + ": '" + lexema + "': Error de sintaxis. ¿Quizás quisiste decir '" + palabraMasCercana + "'?");
+                    }
+                }
+            }
+        }
+    }*/
 
     private int calcularDistanciaLevenshtein(String s1, String s2) {
         // Algoritmo de distancia de Levenshtein para medir la similitud entre dos cadenas
@@ -417,21 +496,21 @@ public class Analizador_Lexico {
             // Definir el tipo de token según el lexema
             if (PALABRAS_RESERVADAS.contains(lexema.toUpperCase())) {
                 return 1; // Palabras reservadas
-            } else if (lexema.matches("[A-Za-z][\\w#]*(\\.[A-Za-z][\\w#])?")) {
-                return 4; // Identificadores
-            } else if (lexema.matches("\\d+\\w")) {
-                return 4; // Identificadores
-            } else if (lexema.matches("'[^']*'")) {
-                return 6; // Constantes alfanuméricas
+            } if (lexema.matches("[A-Za-z][\\w#]*(\\.[A-Za-z][\\w#]*)*")) {
+                return 4; // Identificadores    
             } else if (lexema.matches("\\d+")) {
                 return 6; // Constantes numéricas
-            } else if (lexema.matches(".|,|\\(|\\)|'")) {
+            }else if (lexema.matches("'[^']*'")) {
+                return 6; // Constantes alfanuméricas
+            } else if (lexema.matches(".|,|\\(|\\)|'|\\*")) {
                 return 5; // Delimitadores
             } else if (lexema.matches("=|>|<|>=|<=|<>")) {
                 return 8; // Operadores relacionales
             } else {
                 return 0; // Desconocido
             }
+            
+            
         }
 
         
@@ -553,7 +632,7 @@ public class Analizador_Lexico {
         }
 
         public int getCodigo() {
-            return 600 + constantes.indexOf(this);
+            return 601 + constantes.indexOf(this);
         }
     }
 }
