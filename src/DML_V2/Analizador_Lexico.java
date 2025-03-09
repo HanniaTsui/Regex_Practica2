@@ -71,7 +71,7 @@ public class Analizador_Lexico {
      */
         String patronToken = "\\b(SELECT|FROM|WHERE|AND|OR|CREATE|TABLE|CHAR|NUMERIC|NOT|NULL|"
                 + "CONSTRAINT|KEY|PRIMARY|FOREIGN|REFERENCES|INSERT|INTO|VALUES)\\b|"
-                + ">=|<=|<>|=|>|<|,|\\(|\\)|\\*|'[^']*'|\\d+\\w*|[A-Za-z][\\w#]*(\\.[A-Za-z][\\w#]*)?";
+                + ">=|<=|<>|=|>|<|!=|,|\\(|\\)|\\*|\\.|'[^']*'|\\d+\\w*|[A-Za-z][\\w#]*(\\.[A-Za-z][\\w#]*)?";
         Pattern pattern = Pattern.compile(patronToken);
         Matcher matcher = pattern.matcher(sentenciaSQL);
 
@@ -125,6 +125,7 @@ public class Analizador_Lexico {
             }
             tokenAnterior = lexema;
         }
+        verificarPuntosMalUbicados();
         verificarIdentificadoresEntreComillas(sentenciaSQL, linea);
         verificarSimbolosDesconocidos(sentenciaSQL, linea);
         verificarCadenasMalFormateadas(sentenciaSQL, linea);
@@ -142,40 +143,17 @@ public class Analizador_Lexico {
     }
     
     private void verificarIdentificadoresEntreComillas(String sentenciaSQL, int linea) {
-        // Primero, verifica los identificadores entre comillas dobles
-        verificarIdentificadoresEntreComillasDobles(sentenciaSQL, linea);
-        
-        Pattern patronComillasSimples = Pattern.compile("'([^']*)'"); //cadenas de texto en comillas simples
-        Matcher matcherComillasSimples = patronComillasSimples.matcher(sentenciaSQL);
-        
-        while (matcherComillasSimples.find()) {
-            String contenido = matcherComillasSimples.group(1); // Contenido entre comillas simples
-            
-            if (contenido.matches("^[a-zA-Z]\\w*$") && !contenido.contains(" ")) {
-                // "^[a-zA-Z]\\w*$" Validar nombres de identificadores
-                int posicionInicio = matcherComillasSimples.start();
-                boolean esConstanteEsperada = false;
-                
-                // Busca si hay un operador antes de este potencial identificador
-                for (int i = posicionInicio - 1; i >= 0; i--) {
-                    char c = sentenciaSQL.charAt(i);
-                    if (Character.isWhitespace(c)) {
-                        continue; // Omite espacios en blanco
-                    }
-                    if (c == '=' || c == '>' || c == '<') {
-                        // Si hay un operador, probablemente sea una constante de cadena válida
-                        esConstanteEsperada = true;
-                    }
-                    break;
-                }
-                
-                // Si no está en un contexto donde se esperaría una constante de cadena, márquelo como error
-                if (!esConstanteEsperada) {
-                    errores.add("Línea " + linea + ": '" + contenido + "' : Error de sintaxis. Identificador no debe ir entre comillas simples");
-                }
+    	Pattern patronComparacion = Pattern.compile("\\b(AND|OR)\\s+\\w+(\\.\\w+)?\\s*=\\s*(\\w+)");
+        Matcher matcher = patronComparacion.matcher(sentenciaSQL);
+
+        while (matcher.find()) {
+            String valor = matcher.group(3); // Extraer el valor después del signo =
+            if (!valor.matches("'[^']*'")) { // Verificar si el valor no está entre comillas simples
+                errores.add("Línea " + linea + ": '" + valor + "' : Error de sintaxis. Falta comilla simple alrededor del valor de cadena");
             }
         }
-    }
+	}
+
     
     private void verificarIdentificadoresEntreComillasDobles(String sentenciaSQL, int linea) {
         // Expresión regular para identificar identificadores entre comillas dobles
@@ -369,26 +347,12 @@ public class Analizador_Lexico {
                     errores.add("Línea " + tokenActual.getLinea() + ": '" + tokenActual.getLexema() + "' : Error de sintaxis. Coma incorrecta antes de '" + tokenActual.getLexema() + "'");
                 }
             }
-            
-            if (i > 0) {
-                Token tokenAnterior = tokens.get(i - 1);
-                if (tokenAnterior.getLexema().equals(".")) {
-                    errores.add("Línea " + tokenActual.getLinea() + ": '" + tokenActual.getLexema() + "' : Error de sintaxis. Punto incorrecto antes de '" + tokenActual.getLexema() + "'");
-                }
-            }
 
             // Verificar si hay una coma después de la palabra reservada
             if (i < tokens.size() - 1) {
                 Token tokenSiguiente = tokens.get(i + 1);
                 if (tokenSiguiente.getLexema().equals(",")) {
                     errores.add("Línea " + tokenActual.getLinea() + ": '" + tokenActual.getLexema() + "' : Error de sintaxis. Coma incorrecta después de '" + tokenActual.getLexema() + "'");
-                }
-            }
-            
-            if (i < tokens.size() - 1) {
-                Token tokenSiguiente = tokens.get(i + 1);
-                if (tokenSiguiente.getLexema().equals(".")) {
-                    errores.add("Línea " + tokenActual.getLinea() + ": '" + tokenActual.getLexema() + "' : Error de sintaxis. Punto incorrecto después de '" + tokenActual.getLexema() + "'");
                 }
             }
         }
@@ -413,6 +377,38 @@ public class Analizador_Lexico {
         }
     }
 }
+    
+    private void verificarPuntosMalUbicados() {
+        for (int i = 0; i < tokens.size(); i++) {
+            Token tokenActual = tokens.get(i);
+
+            // Verificar si el token actual es un punto
+            if (tokenActual.getLexema().equals(".")) {
+                boolean puntoValido = false;
+
+                // Verificar si el punto está entre dos identificadores
+                if (i > 0 && i < tokens.size() - 1) {
+                    Token tokenAnterior = tokens.get(i - 1);
+                    Token tokenSiguiente = tokens.get(i + 1);
+
+                    // Verificar si el token anterior y el siguiente son identificadores
+                    if (tokenAnterior.getTipo() == 4 && tokenSiguiente.getTipo() == 4) {
+                        puntoValido = true;
+                    }
+                    
+                    // Verificar si el punto es parte de un número decimal
+                    if (tokenAnterior.getLexema().matches("\\d+") && tokenSiguiente.getLexema().matches("\\d+")) {
+                        puntoValido = true;
+                    }
+                }
+
+                // Si el punto no es válido, agregar un error
+                if (!puntoValido) {
+                    errores.add("Línea " + tokenActual.getLinea() + ": '" + tokenActual.getLexema() + "' : Error de sintaxis. Punto mal ubicado");
+                }
+            }
+        }
+    }
     
     // Método para verificar si un token es un alias válido
     private boolean esAliasValido(Token token) {
@@ -467,7 +463,7 @@ public class Analizador_Lexico {
                 return 6; // Constantes alfanuméricas
             } else if (lexema.matches(".|,|\\(|\\)|'|\\*")) {
                 return 5; // Delimitadores
-            } else if (lexema.matches("=|>|<|>=|<=|<>")) {
+            } else if (lexema.matches("=|>|<|>=|<=|<>|!=")) {
                 return 8; // Operadores relacionales
             } else {
                 return 0; // Desconocido
@@ -539,7 +535,9 @@ public class Analizador_Lexico {
                 case "<": return 82;
                 case ">=": return 84;
                 case "<=": return 85;
+                case "!=" : return 86;
                 default: return 0;
+                
             }
         }
     }
