@@ -126,6 +126,7 @@ public class Analizador_Lexico {
             tokenAnterior = lexema;
         }
         verificarPuntosMalUbicados();
+        verificarParentesis(sentenciaSQL);
         verificarIdentificadoresEntreComillas(sentenciaSQL, linea);
         verificarSimbolosDesconocidos(sentenciaSQL, linea);
         verificarCadenasMalFormateadas(sentenciaSQL, linea);
@@ -143,7 +144,7 @@ public class Analizador_Lexico {
     }
     
     private void verificarIdentificadoresEntreComillas(String sentenciaSQL, int linea) {
-    	Pattern patronComparacion = Pattern.compile("\\b(AND|OR)\\s+\\w+(\\.\\w+)?\\s*=\\s*(\\w+)");
+    	Pattern patronComparacion = Pattern.compile("\\b(WHERE|AND|OR)\\s+\\w+(\\.\\w+)?\\s*=\\s*(\\w+)");
         Matcher matcher = patronComparacion.matcher(sentenciaSQL);
 
         while (matcher.find()) {
@@ -154,6 +155,39 @@ public class Analizador_Lexico {
         }
 	}
 
+    
+    private void verificarParentesis(String sentenciaSQL) {
+        int contadorParentesis = 0;
+        int lineaActual = 1;
+        int posicionInicio = 0;
+
+        for (int i = 0; i < sentenciaSQL.length(); i++) {
+            char caracter = sentenciaSQL.charAt(i);
+
+            // Contar líneas para reportar errores
+            if (caracter == '\n') {
+                lineaActual++;
+                posicionInicio = i + 1;
+            }
+
+            // Verificar paréntesis
+            if (caracter == '(') {
+                contadorParentesis++;
+            } else if (caracter == ')') {
+                contadorParentesis--;
+                if (contadorParentesis < 0) {
+                    // Paréntesis que cierra sin uno que abra
+                    errores.add("Línea " + lineaActual + ": ): Error lexico. Paréntesis que cierra sin uno que abra.");
+                    return;
+                }
+            }
+        }
+
+        // Verificar si todos los paréntesis están cerrados
+        if (contadorParentesis > 0) {
+            errores.add("Línea " + lineaActual + ": (: Error lexico. Paréntesis que abre sin uno que cierre.");
+        }
+    }
     
     private void verificarIdentificadoresEntreComillasDobles(String sentenciaSQL, int linea) {
         // Expresión regular para identificar identificadores entre comillas dobles
