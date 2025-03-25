@@ -72,7 +72,7 @@ public class Analizador_Lexico {
      */
         String patronToken = "\\b(SELECT|FROM|WHERE|AND|OR|CREATE|TABLE|CHAR|NUMERIC|NOT|NULL|"
                 + "CONSTRAINT|KEY|PRIMARY|FOREIGN|REFERENCES|INSERT|INTO|VALUES)\\b|"
-                + ">=|<=|<>|=|>|<|!=|,|\\(|\\)|\\*|\\.|;|'[^']*'|\\d+\\w*|[A-Za-z][\\w#]*(\\.[A-Za-z][\\w#]*)?";
+                + ">=|<=|<>|=|>|<|!=|,|\\+|\\(|\\)|\\*|\\.|;|'[^']*'|\\d+\\w*|[A-Za-z][\\w#]*(\\.[A-Za-z][\\w#]*)?";
         Pattern pattern = Pattern.compile(patronToken);
         Matcher matcher = pattern.matcher(sentenciaSQL);
 

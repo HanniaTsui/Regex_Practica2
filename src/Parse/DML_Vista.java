@@ -174,6 +174,9 @@ public class DML_Vista extends JFrame {
         botonLimpiar.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 areaTexto.setText("");
+                modeloTablaErrores = new DefaultTableModel();
+                modeloTablaErrores.addColumn("Resultado");
+                tablaErrores.setModel(modeloTablaErrores);
               /*  tablaLexica.setModel(new DefaultTableModel());
                 tablaIdentificadores.setModel(new DefaultTableModel());
                 tablaConstantes.setModel(new DefaultTableModel());*/

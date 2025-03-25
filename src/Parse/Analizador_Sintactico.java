@@ -47,7 +47,7 @@ public class Analizador_Sintactico {
         Map<Integer, int[]> reglasD = new HashMap<>();
         reglasD.put(50, new int[]{50, 302}); // , 
         reglasD.put(11, new int[]{99}); //  (FROM)
-        reglasD.put(12, new int[]{99}); //  (WHERE)
+        reglasD.put(12, new int[]{99}); //  (WHERE) //REVISAR
         reglasD.put(199, new int[]{99}); //  ($)
         tablaSintactica.put(303, reglasD);
 
@@ -56,7 +56,7 @@ public class Analizador_Sintactico {
         reglasE.put(51, new int[]{51, 4}); // .
         reglasE.put(50, new int[]{99}); //  (,)
         reglasE.put(11, new int[]{99}); //  (FROM)
-        reglasE.put(12, new int[]{99}); //  (WHERE)
+        reglasE.put(12, new int[]{99}); //  (WHERE) //REVISAR
         reglasE.put(199, new int[]{99}); //  ($)
         reglasE.put(83, new int[]{99}); //  (=)
         reglasE.put(81, new int[]{99}); //  (>)
@@ -64,6 +64,9 @@ public class Analizador_Sintactico {
         reglasE.put(84, new int[]{99}); //  (>=)
         reglasE.put(85, new int[]{99}); //  (<=)
         reglasE.put(86, new int[]{99}); //  (!=)
+        reglasE.put(13, new int[]{99}); 
+        reglasE.put(14, new int[]{99}); 
+        reglasE.put(53, new int[]{99}); 
         tablaSintactica.put(305, reglasE);
 
         // Regla F (306) -> G H
@@ -76,6 +79,7 @@ public class Analizador_Sintactico {
         reglasH.put(50, new int[]{50, 306}); // , 
         reglasH.put(12, new int[]{99}); //  (WHERE)
         reglasH.put(199, new int[]{99}); //  ($)
+        reglasH.put(53, new int[]{99}); 
         tablaSintactica.put(307, reglasH);
 
         // Regla G (308) -> IDENTIFICADOR I
@@ -89,12 +93,14 @@ public class Analizador_Sintactico {
         reglasI.put(50, new int[]{99}); //  (,)
         reglasI.put(12, new int[]{99}); //  (WHERE)
         reglasI.put(199, new int[]{99}); //  ($)
+        reglasI.put(53, new int[]{99}); 
         tablaSintactica.put(309, reglasI);
 
         // Regla J (310) -> WHERE K 
         Map<Integer, int[]> reglasJ = new HashMap<>();
         reglasJ.put(12, new int[]{12, 311}); // WHERE
         reglasJ.put(199, new int[]{99}); // ($)
+        reglasJ.put(53, new int[]{99}); 
         tablaSintactica.put(310, reglasJ);
 
         // Regla K (311) -> L M V
@@ -107,6 +113,7 @@ public class Analizador_Sintactico {
         reglasV.put(14, new int[]{317, 311}); // AND
         reglasV.put(15, new int[]{317, 311}); // OR
         reglasV.put(199, new int[]{99}); // ($)
+      	reglasV.put(53, new int[]{99}); 
         tablaSintactica.put(312, reglasV);
 
         // Regla L (313) -> C N
@@ -140,7 +147,7 @@ public class Analizador_Sintactico {
         reglasO.put(4, new int[]{304}); // IDENTIFICADOR (via C)
         reglasO.put(54, new int[]{54, 318, 54}); // ' R '
         reglasO.put(61, new int[]{319}); // CONSTANTE numérica
-        reglasO.put(62, new int[]{318}); // CONSTANTE numérica
+        reglasO.put(62, new int[]{318}); // CONSTANTE alfanumerica
         tablaSintactica.put(316, reglasO);
 
         // Regla P (317) -> AND | OR
