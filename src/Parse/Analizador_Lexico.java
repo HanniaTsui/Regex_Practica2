@@ -1,4 +1,4 @@
-package DML_V2;
+package Parse;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +27,7 @@ public class Analizador_Lexico {
         constantes = new ArrayList<>();
         errores = new ArrayList<>();
     }
+    
 
     public void analizar(String sentenciaSQL) {
         // Limpiar listas antes de un nuevo análisis
@@ -71,7 +72,7 @@ public class Analizador_Lexico {
      */
         String patronToken = "\\b(SELECT|FROM|WHERE|AND|OR|CREATE|TABLE|CHAR|NUMERIC|NOT|NULL|"
                 + "CONSTRAINT|KEY|PRIMARY|FOREIGN|REFERENCES|INSERT|INTO|VALUES)\\b|"
-                + ">=|<=|<>|=|>|<|!=|,|\\(|\\)|\\*|\\.|'[^']*'|\\d+\\w*|[A-Za-z][\\w#]*(\\.[A-Za-z][\\w#]*)?";
+                + ">=|<=|<>|=|>|<|!=|,|\\(|\\)|\\*|\\.|;|'[^']*'|\\d+\\w*|[A-Za-z][\\w#]*(\\.[A-Za-z][\\w#]*)?";
         Pattern pattern = Pattern.compile(patronToken);
         Matcher matcher = pattern.matcher(sentenciaSQL);
 
@@ -538,7 +539,7 @@ public class Analizador_Lexico {
                 }
             }
 
-            if (lexema.matches("'[^']*'") || lexema.matches("\\d+")) {
+     /*       if (lexema.matches("'[^']*'") || lexema.matches("\\d+")) {
                 return contadorConstantes++; // Asigna el código para constante (numérica o alfanumérica)
             }
             // Si no es una palabra reservada, asignamos un código único a los identificadores
@@ -552,7 +553,19 @@ public class Analizador_Lexico {
                     return codigo;
                 }
             }
+            */
             
+            if (lexema.matches("[A-Za-z][\\w#]*(\\.[A-Za-z][\\w#]*)*")) {
+                return 4; // Tipo de identificador
+            }
+
+            // Constantes
+            if (lexema.matches("\\d+")) {
+                return 61; // Constante numérica
+            }
+            if (lexema.matches("'[^']*'")) {
+                return 62; // Constante alfanumérica
+            }
             // Si no es ninguna de las anteriores, asignamos el código según el lexema
             switch (lexema) {
                 case ",": return 50;
