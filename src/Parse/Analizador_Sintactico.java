@@ -195,7 +195,7 @@ public class Analizador_Sintactico {
 
     
     
-    public void analizar() {
+    public String analizar() {
         // Paso 1: Inicializar pila
         pila.push(199); // '$'
         pila.push(300); // Símbolo inicial 'Q'
@@ -210,9 +210,10 @@ public class Analizador_Sintactico {
             }
         }
         System.out.println("\nPila inicial: " + pila);
-
+    
         int X, K;
         boolean error = false;
+        String mensajeError = ""; // Variable para almacenar el mensaje de error
         
         do {
             X = pila.pop();
@@ -222,7 +223,7 @@ public class Analizador_Sintactico {
             System.out.println("X (tope pila): " + X);
             System.out.println("K (token actual): " + K);
             System.out.println("Pila actual: " + pila);
-
+    
             if (esTerminal(X) || X == 199) { // Si X es terminal o '$'
                 if (X == K) {
                     System.out.println("Emparejado: " + X);
@@ -231,8 +232,8 @@ public class Analizador_Sintactico {
                     }
                 } else {
                     error = true;
-                    String descripcionError = clasificarErrorTerminal(X, K);
-                    System.out.println(descripcionError);
+                    mensajeError = clasificarErrorTerminal(X, K);
+                    System.out.println(mensajeError);
                     break;
                 }
             } else { // X es no terminal
@@ -252,23 +253,26 @@ public class Analizador_Sintactico {
                         }
                     } else {
                         error = true;
-                        String descripcionError = clasificarErrorNoTerminal(X, K);
-                        System.out.println(descripcionError);
+                        mensajeError = clasificarErrorNoTerminal(X, K);
+                        System.out.println(mensajeError);
                         break;
                     }
                 } else {
                     error = true;
-                    System.out.println("ERROR [Tipo 1, Código 101]: Símbolo desconocido (no hay producciones para " + X + ")");
+                    mensajeError = "ERROR [Tipo 1, Código 101]: Símbolo desconocido (no hay producciones para " + X + ")";
+                    System.out.println(mensajeError);
                     break;
                 }
             }
             
         } while (X != 199 && !error); // Hasta que X sea '$' o haya error
-
+    
         if (!error) {
             System.out.println("\nAnálisis completado con éxito!");
+            return ""; // Sin errores, devolvemos cadena vacía
         } else {
             System.out.println("\nAnálisis terminado con errores");
+            return mensajeError; // Devolvemos el mensaje de error
         }
     }
     

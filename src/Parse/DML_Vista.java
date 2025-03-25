@@ -45,16 +45,6 @@ public class DML_Vista extends JFrame {
                     ventana.setVisible(true);
                     
                     Analizador_Lexico lexer = new Analizador_Lexico();
-                    
-                    lexer.analizar("SELECT ANOMBRE FROM ALUMNOS WHERE A# = 'valor' + 5");
-                    System.out.println("SELECT ANOMBRE\r\n"
-                    		+ "FROM ALUMNOS,INSCRITOS,\r\n"
-                    		+ "WHERE ALUMNOS.A#=INSCRITOS.A# AND\r\n"
-                    		+ "INSCRITOS.SEMESTRE='2010I'");
-
-                    // Create and run syntactic analyzer
-                    Analizador_Sintactico parser = new Analizador_Sintactico(lexer);
-                    parser.analizar();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -95,9 +85,9 @@ public class DML_Vista extends JFrame {
         areaTexto.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JScrollPane scrollAreaTexto = new JScrollPane(areaTexto);
-        scrollAreaTexto.setBounds(30, 120, 580, 217);
+        scrollAreaTexto.setBounds(30, 120, 1130, 217);
         panelContenido.add(scrollAreaTexto);
-
+/*
         JTabbedPane pestañasTablas = new JTabbedPane();
         pestañasTablas.setBounds(640, 120, 520, 510);
         panelContenido.add(pestañasTablas);
@@ -113,7 +103,7 @@ public class DML_Vista extends JFrame {
         tablaConstantes = new JTable();
         JScrollPane scrollTablaConstantes = new JScrollPane(tablaConstantes);
         pestañasTablas.addTab("Tabla de constantes", scrollTablaConstantes);
-
+*/
         setResizable(false);
 
         botonAceptar = new JButton("Aceptar");
@@ -121,26 +111,27 @@ public class DML_Vista extends JFrame {
         botonAceptar.setForeground(new Color(255, 255, 255));
         botonAceptar.setFocusable(false);
         botonAceptar.setBackground(new Color(31, 203, 23));
-        botonAceptar.setBounds(157, 358, 130, 30);
+        botonAceptar.setBounds(450, 358, 130, 30);
         panelContenido.add(botonAceptar);
 
         botonLimpiar = new JButton("Limpiar");
         botonLimpiar.setFont(new Font("Tahoma", Font.BOLD, 16));
         botonLimpiar.setForeground(new Color(255, 255, 255));
         botonLimpiar.setFocusable(false);
-        botonLimpiar.setBounds(317, 358, 130, 30);
+        botonLimpiar.setBounds(610, 358, 130, 30);
         botonLimpiar.setBackground(new Color(49, 59, 255));
         panelContenido.add(botonLimpiar);
 
         tablaErrores = new JTable();
         modeloTablaErrores = new DefaultTableModel();
-        modeloTablaErrores.addColumn("No. de línea");
+     /*   modeloTablaErrores.addColumn("No. de línea");
         modeloTablaErrores.addColumn("Lexema inválido");
-        modeloTablaErrores.addColumn("Tipo");
+        modeloTablaErrores.addColumn("Tipo");*/
+        modeloTablaErrores.addColumn("Resultados");
         tablaErrores.setModel(modeloTablaErrores);
 
         JScrollPane scrollTablaErrores = new JScrollPane(tablaErrores);
-        scrollTablaErrores.setBounds(30, 432, 578, 198);
+        scrollTablaErrores.setBounds(30, 432, 1130, 198);
         panelContenido.add(scrollTablaErrores);
 
         JLabel lblErrores = new JLabel("Errores");
@@ -152,123 +143,43 @@ public class DML_Vista extends JFrame {
         panelContenido.add(lblErrores);
 
         // Configurar el formato de las columnas de la tabla de errores
-        configurarFormatoColumnasErrores();
+    //    configurarFormatoColumnasErrores();
 
-        botonAceptar.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                String sentenciaSQL = areaTexto.getText();
-                Analizador_Lexico analizador = new Analizador_Lexico();
-                analizador.analizar(sentenciaSQL);
-
-                // Limpiar las tablas antes de agregar nuevos datos
-                modeloTablaErrores.setRowCount(0); // Limpiar la tabla de errores
-                DefaultTableModel modeloTablaLexica = new DefaultTableModel();
-                modeloTablaLexica.addColumn("No.");
-                modeloTablaLexica.addColumn("Línea");
-                modeloTablaLexica.addColumn("TOKEN");
-                modeloTablaLexica.addColumn("Tipo");
-                modeloTablaLexica.addColumn("Código");
-                tablaLexica.setModel(modeloTablaLexica);
-
-                DefaultTableModel modeloTablaIdentificadores = new DefaultTableModel();
-                modeloTablaIdentificadores.addColumn("Identificador");
-                modeloTablaIdentificadores.addColumn("Valor");
-                modeloTablaIdentificadores.addColumn("Línea");
-                tablaIdentificadores.setModel(modeloTablaIdentificadores);
-
-                DefaultTableModel modeloTablaConstantes = new DefaultTableModel();
-                modeloTablaConstantes.addColumn("No.");
-                modeloTablaConstantes.addColumn("Constante");
-                modeloTablaConstantes.addColumn("Tipo");
-                modeloTablaConstantes.addColumn("Valor");
-                tablaConstantes.setModel(modeloTablaConstantes);
-
-                boolean hayErrores = false;
-                for (String error : analizador.getErrores()) {
-                    String[] partesError = error.split(":");
-                    if (partesError.length >= 3) { // Verificar que hay al menos 3 partes
-                        modeloTablaErrores.addRow(new Object[]{
-                                partesError[0], // Línea
-                                partesError[1], // Lexema inválido
-                                partesError[2]  // Tipo de error
-                        });
-                        hayErrores = true;
-                    } else {
-                        // Si el error no tiene el formato esperado, mostrarlo completo en una sola columna
-                        modeloTablaErrores.addRow(new Object[]{
-                                "N/A", // Línea no disponible
-                                error, // Mostrar el error completo
-                                "N/A"  // Tipo no disponible
-                        });
-                        hayErrores = true;
-                    }
-                }
-
-                if (hayErrores) {
-                    // Mostrar solo la tabla de errores
-                    tablaErrores.setModel(modeloTablaErrores);
-                } else {
-                    // Si no hay errores, mostrar las otras tablas
-                    // Mostrar tokens en la tabla léxica
-                    int contador = 1;
-                    for (Parse.Analizador_Lexico.Token token : analizador.getTokens()) {
-                        modeloTablaLexica.addRow(new Object[]{
-                                contador++,
-                                token.getLinea(),
-                                token.getLexema(),
-                                token.getTipo(),
-                                token.getCodigo(),
-                        });
-                    }
-
-                    // Mostrar identificadores en la tabla de identificadores
-                    TreeMap<Integer, String[]> mapaIdentificadores = new TreeMap<>();
-                    for (Parse.Analizador_Lexico.Identificador identificador : analizador.getIdentificadores()) {
-                        String nombre = identificador.getNombre();
-                        int valor = identificador.getValor();
-                        String linea = Integer.toString(identificador.getLinea());
-
-                        if (mapaIdentificadores.containsKey(valor)) {
-                            String[] datos = mapaIdentificadores.get(valor);
-                            if (!datos[1].contains(linea)) {
-                                datos[1] += "," + linea;
-                            }
-                        } else {
-                            mapaIdentificadores.put(valor, new String[]{nombre, linea});
-                        }
-                    }
-
-                    for (Map.Entry<Integer, String[]> entry : mapaIdentificadores.entrySet()) {
-                        modeloTablaIdentificadores.addRow(new Object[]{
-                                entry.getValue()[0], // Nombre del identificador
-                                entry.getKey(),       // Valor del identificador
-                                entry.getValue()[1]   // Líneas unificadas
-                        });
-                    }
-
-                    // Mostrar constantes en la tabla de constantes
-                    contador = 1;
-                    for (Parse.Analizador_Lexico.Constante constante : analizador.getConstantes()) {
-                        modeloTablaConstantes.addRow(new Object[]{
-                                contador++,
-                                constante.getValor(),
-                                constante.getTipo(),
-                                constante.getCodigo()
-                        });
-                    }
-                }
+    botonAceptar.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+            String sentenciaSQL = areaTexto.getText();
+            Analizador_Lexico analizador = new Analizador_Lexico();
+            analizador.analizar(sentenciaSQL);
+            Analizador_Sintactico parser = new Analizador_Sintactico(analizador);
+            String errorSintactico = parser.analizar(); // Obtener el resultado del análisis sintáctico
+    
+            // Limpiar la tabla antes de agregar nuevos datos
+            modeloTablaErrores.setRowCount(0);
+    
+            // Configurar el modelo de la tabla con una sola columna
+            modeloTablaErrores.setColumnIdentifiers(new Object[]{"Resultado"});
+    
+            // Agregar el resultado a la tabla
+            if (errorSintactico.isEmpty()) {
+                modeloTablaErrores.addRow(new Object[]{"Análisis sintáctico exitoso"});
+            } else {
+                modeloTablaErrores.addRow(new Object[]{errorSintactico});
             }
-        });
+    
+            // Actualizar la tabla en la interfaz
+            tablaErrores.setModel(modeloTablaErrores);
+        }
+    });
 
         botonLimpiar.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 areaTexto.setText("");
-                tablaLexica.setModel(new DefaultTableModel());
+              /*  tablaLexica.setModel(new DefaultTableModel());
                 tablaIdentificadores.setModel(new DefaultTableModel());
-                tablaConstantes.setModel(new DefaultTableModel());
+                tablaConstantes.setModel(new DefaultTableModel());*/
 
                 // Limpiar la tabla de errores y restaurar el formato de las columnas
-                configurarFormatoColumnasErrores();
+               // configurarFormatoColumnasErrores();
             }
         });
     }
