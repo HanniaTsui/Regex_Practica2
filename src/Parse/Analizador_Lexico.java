@@ -559,6 +559,9 @@ public class Analizador_Lexico {
                 return 4; // Tipo de identificador
             }
 
+            if (lexema.equals("\n")) {
+                return 55; // Código para salto de línea
+            }
             // Constantes
             if (lexema.matches("\\d+")) {
                 return 61; // Constante numérica

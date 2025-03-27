@@ -269,8 +269,20 @@ public class Analizador_Sintactico {
     private String clasificarErrorTerminal(int X, int K) {
         // Clasifica errores cuando X es un terminal
     	 // Obtener la línea actual
-        int lineaActual = apuntador < lineasTokens.length ? lineasTokens[apuntador] : lineasTokens[lineasTokens.length-1];
-        String lineaStr = String.format("%02d", lineaActual);
+      //  int lineaActual = apuntador < lineasTokens.length ? lineasTokens[apuntador] : lineasTokens[lineasTokens.length-1];
+    	int lineaActual = apuntador < lineasTokens.length ? lineasTokens[apuntador] : lineasTokens[lineasTokens.length - 1];
+        
+        // Ajustar la línea si hay saltos de línea antes del error
+        if (apuntador > 0) {
+            for (int i = apuntador - 1; i >= 0; i--) {
+                // Si el token anterior está en una línea menor, significa que hubo un salto de línea
+                if (i > 0 && lineasTokens[i] < lineasTokens[i + 1]) {
+                    lineaActual = lineasTokens[i]; // Retroceder una línea
+                    break;
+                }
+            }
+        }
+    	String lineaStr = String.format("%02d", lineaActual);
         
     	String tipoEsperado = "";
         int codigoError = 0;
@@ -300,7 +312,12 @@ public class Analizador_Sintactico {
     
     private String clasificarErrorNoTerminal(int X, int K) {
         // Clasifica errores cuando X es un no terminal
-    	int lineaActual = apuntador < lineasTokens.length ? lineasTokens[apuntador] : lineasTokens[lineasTokens.length-1];
+    	//int lineaActual = apuntador < lineasTokens.length ? lineasTokens[apuntador] : lineasTokens[lineasTokens.length-1];
+		int lineaActual = apuntador < lineasTokens.length ? lineasTokens[apuntador] : lineasTokens[lineasTokens.length-1];
+		    
+		if (apuntador > 0 && X != K) {
+		        lineaActual = lineasTokens[apuntador - 1];
+		}
     	String lineaStr = String.format("%02d", lineaActual);
     	    
         Map<Integer, int[]> producciones = tablaSintactica.get(X);
