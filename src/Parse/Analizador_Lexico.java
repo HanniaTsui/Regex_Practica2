@@ -562,13 +562,14 @@ public class Analizador_Lexico {
             if (lexema.equals("\n")) {
                 return 55; // Código para salto de línea
             }
+            if (lexema.matches("'[^']*'")) {
+                return 62; // Constante alfanumérica
+            }
             // Constantes
             if (lexema.matches("\\d+")) {
                 return 61; // Constante numérica
             }
-            if (lexema.matches("'[^']*'")) {
-                return 62; // Constante alfanumérica
-            }
+            
             // Si no es ninguna de las anteriores, asignamos el código según el lexema
             switch (lexema) {
                 case ",": return 50;

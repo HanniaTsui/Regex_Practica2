@@ -265,19 +265,17 @@ public class Analizador_Sintactico {
             return mensajeError; // Devolvemos el mensaje de error
         }
     }
-    
+    /*
     private String clasificarErrorTerminal(int X, int K) {
         // Clasifica errores cuando X es un terminal
     	 // Obtener la línea actual
       //  int lineaActual = apuntador < lineasTokens.length ? lineasTokens[apuntador] : lineasTokens[lineasTokens.length-1];
     	int lineaActual = apuntador < lineasTokens.length ? lineasTokens[apuntador] : lineasTokens[lineasTokens.length - 1];
         
-        // Ajustar la línea si hay saltos de línea antes del error
         if (apuntador > 0) {
             for (int i = apuntador - 1; i >= 0; i--) {
-                // Si el token anterior está en una línea menor, significa que hubo un salto de línea
-                if (i > 0 && lineasTokens[i] < lineasTokens[i + 1]) {
-                    lineaActual = lineasTokens[i]; // Retroceder una línea
+                 if (i > 0 && lineasTokens[i] < lineasTokens[i + 1]) {
+                    lineaActual = lineasTokens[i];
                     break;
                 }
             }
@@ -349,6 +347,110 @@ public class Analizador_Sintactico {
         return "ERROR [" + (codigoError == 101 ? 1 : 2) + ": " + codigoError + "]: Linea " + lineaStr + 
                 ". Se esperaba " + tipoEsperado + " para " + X + " pero se encontró " + K;
         //return "ERROR [" + (codigoError == 101 ? 1 : 2) + ": " + codigoError + "]: Se esperaba " + tipoEsperado + " para " + X + " pero se encontró " + K;
+    }*/
+    
+    private String clasificarErrorTerminal(int X, int K) {
+        int lineaActual = apuntador < lineasTokens.length ? lineasTokens[apuntador] : lineasTokens[lineasTokens.length-1];
+        
+        // Ajustar línea si hay saltos de línea antes del error
+        if (apuntador > 0) {
+            for (int i = apuntador - 1; i >= 0; i--) {
+                if (i > 0 && lineasTokens[i] < lineasTokens[i + 1]) {
+                    lineaActual = lineasTokens[i];
+                    break;
+                }
+            }
+        }
+        
+        String lineaStr = String.format("%02d", lineaActual);
+   
+        String tipoEsperado = getTipoEsperado(X);
+        int codigoError = getCodigoError(X);
+        
+        return "ERROR [" + (codigoError == 101 ? 1 : 2) + ": " + codigoError + "]: Linea " + lineaStr + 
+               ". Se esperaba " + tipoEsperado;
+    }
+
+    private String clasificarErrorNoTerminal(int X, int K) {
+        int lineaActual = apuntador < lineasTokens.length ? lineasTokens[apuntador] : lineasTokens[lineasTokens.length-1];
+        
+        if (apuntador > 0 && X != K) {
+            lineaActual = lineasTokens[apuntador - 1];
+        }
+        
+        String lineaStr = String.format("%02d", lineaActual);
+        String tipoEsperado = getTipoEsperadoParaNoTerminal(X);
+        int codigoError = getCodigoErrorParaNoTerminal(X);
+        
+        return "ERROR [" + (codigoError == 101 ? 1 : 2) + ": " + codigoError + "]: Linea " + lineaStr + 
+               ". Se esperaba " + tipoEsperado;
+    }
+
+    // Nuevos métodos auxiliares
+    private String getTipoEsperado(int codigoToken) {
+        if (codigoToken == 199) return "Fin de entrada ($)";
+        if (codigoToken >= 10 && codigoToken <= 31) return "Palabra Reservada";
+        if (codigoToken == 4) return "Identificador";
+        if (codigoToken >= 50 && codigoToken <= 54 || codigoToken == 72) return "Delimitador";
+        if (codigoToken == 61 || codigoToken == 62) return "Constante";
+        if (codigoToken >= 70 && codigoToken <= 73) return "Operador";
+        if (codigoToken >= 81 && codigoToken <= 86) return "Operador Relacional";
+        return "Símbolo desconocido";
+    }
+
+    private int getCodigoError(int codigoToken) {
+        if (codigoToken == 199) return 205;
+        if (codigoToken >= 10 && codigoToken <= 31) return 201;
+        if (codigoToken == 4) return 204;
+        if (codigoToken >= 50 && codigoToken <= 54 || codigoToken == 72) return 205;
+        if (codigoToken == 61 || codigoToken == 62) return 206;
+        if (codigoToken >= 70 && codigoToken <= 73) return 207;
+        if (codigoToken >= 81 && codigoToken <= 86) return 208;
+        return 101;
+    }
+    private String getTipoEsperadoParaNoTerminal(int noTerminal) {
+        Map<Integer, int[]> producciones = tablaSintactica.get(noTerminal);
+        if (producciones == null) return "Símbolo desconocido";
+        
+        if (noTerminal == 62) {
+            return "Delimitador";  // Para la comilla de cierre
+        }
+        // Prioridad especial para reglas de condiciones (K, M, N)
+        if (noTerminal == 311 || noTerminal == 314 || noTerminal == 315) {
+            return "Operador Relacional";
+        }
+        
+        // Priorizar los tipos en este orden
+        if (contieneAlgunCodigo(producciones, 10, 11, 12, 13, 14, 15)) return "Palabra Reservada";
+        if (contieneAlgunCodigo(producciones, 4)) return "Identificador";
+        if (contieneAlgunCodigo(producciones, 50, 51, 52, 53,54, 72)) return "Delimitador";
+        if (contieneAlgunCodigo(producciones, 61, 62)) return "Constante";
+        if (contieneAlgunCodigo(producciones, 83, 81, 82, 84, 85, 86)) return "Operador Relacional";
+        return "Símbolo desconocido";
+    }
+
+    
+
+    private int getCodigoErrorParaNoTerminal(int noTerminal) {
+        Map<Integer, int[]> producciones = tablaSintactica.get(noTerminal);
+        if (producciones == null) return 101;
+        
+        if (contieneAlgunCodigo(producciones, 10, 11, 12, 13, 14, 15)) return 201;
+        if (contieneAlgunCodigo(producciones, 4)) return 204;
+        if (contieneAlgunCodigo(producciones, 50, 51, 52, 53, 72)) return 205;
+        if (contieneAlgunCodigo(producciones, 61, 62)) return 206;
+        if (contieneAlgunCodigo(producciones, 83, 81, 82, 84, 85, 86)) return 208;
+        return 101;
+    }
+
+    
+    private boolean contieneAlgunCodigo(Map<Integer, int[]> producciones, int... codigos) {
+        for (int codigo : codigos) {
+            if (producciones.containsKey(codigo)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean esTerminal(int simbolo) {
