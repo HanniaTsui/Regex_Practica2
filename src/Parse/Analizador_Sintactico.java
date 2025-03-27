@@ -11,7 +11,8 @@ public class Analizador_Sintactico {
     private Map<Integer, Map<Integer, int[]>> tablaSintactica;
     private int[] tokensLexicos;
     private int apuntador;
-
+    private int[] lineasTokens;
+    
     public Analizador_Sintactico(Analizador_Lexico lexer) {
         this.lexer = lexer;
         this.pila = new Stack<>();
@@ -170,13 +171,15 @@ public class Analizador_Sintactico {
     private void prepararAnalisis() {
         List<Analizador_Lexico.Token> tokens = lexer.getTokens();
         tokensLexicos = new int[tokens.size() + 1];
+        lineasTokens = new int[tokens.size() + 1]; 
         
         for (int i = 0; i < tokens.size(); i++) {
             Analizador_Lexico.Token token = tokens.get(i);
             tokensLexicos[i] = token.getCodigo();
+            lineasTokens[i] = token.getLinea();
         }
         tokensLexicos[tokens.size()] = 199; // '$' fin de cadena
-        
+        lineasTokens[tokens.size()] = tokens.isEmpty() ? 1 : tokens.get(tokens.size()-1).getLinea();
         apuntador = 0;
     }
 
@@ -265,7 +268,11 @@ public class Analizador_Sintactico {
     
     private String clasificarErrorTerminal(int X, int K) {
         // Clasifica errores cuando X es un terminal
-        String tipoEsperado = "";
+    	 // Obtener la línea actual
+        int lineaActual = apuntador < lineasTokens.length ? lineasTokens[apuntador] : lineasTokens[lineasTokens.length-1];
+        String lineaStr = String.format("%02d", lineaActual);
+        
+    	String tipoEsperado = "";
         int codigoError = 0;
 
         if (X == 199) {
@@ -278,17 +285,24 @@ public class Analizador_Sintactico {
             tipoEsperado = "Delimitador"; codigoError = 205;
         } else if (X == 61 || X == 62) {
             tipoEsperado = "Constante"; codigoError = 206;
-        } else if (X == 83 || X == 81 || X == 82 || X == 84 || X == 85 || X == 86) {
+        } else if (X == 70 || X == 71 || X == 72 || X == 73){
+        	tipoEsperado = "Operador"; codigoError = 207;
+        }
+        else if (X == 83 || X == 81 || X == 82 || X == 84 || X == 85 || X == 86) {
             tipoEsperado = "Operador Relacional"; codigoError = 208;
         } else {
             tipoEsperado = "Símbolo desconocido"; codigoError = 101;
         }
-
-        return "ERROR [" + (codigoError == 101 ? 1 : 2) + ": " + codigoError + "]: Se esperaba " + tipoEsperado + " (" + X + ") pero se encontró " + K;
+        return "ERROR [" + (codigoError == 101 ? 1 : 2) + ": " + codigoError + "]: Linea " + lineaStr + 
+                ". Se esperaba " + tipoEsperado + " (" + X + ") pero se encontró " + K;
+        //return "ERROR [" + (codigoError == 101 ? 1 : 2) + ": " + codigoError + "]: Se esperaba " + tipoEsperado + " (" + X + ") pero se encontró " + K;
     }
     
     private String clasificarErrorNoTerminal(int X, int K) {
         // Clasifica errores cuando X es un no terminal
+    	int lineaActual = apuntador < lineasTokens.length ? lineasTokens[apuntador] : lineasTokens[lineasTokens.length-1];
+    	String lineaStr = String.format("%02d", lineaActual);
+    	    
         Map<Integer, int[]> producciones = tablaSintactica.get(X);
         String tipoEsperado = "";
         int codigoError = 0;
@@ -315,8 +329,9 @@ public class Analizador_Sintactico {
         if (tipoEsperado.isEmpty()) {
             tipoEsperado = "Símbolo desconocido"; codigoError = 101;
         }
-
-        return "ERROR [" + (codigoError == 101 ? 1 : 2) + ": " + codigoError + "]: Se esperaba " + tipoEsperado + " para " + X + " pero se encontró " + K;
+        return "ERROR [" + (codigoError == 101 ? 1 : 2) + ": " + codigoError + "]: Linea " + lineaStr + 
+                ". Se esperaba " + tipoEsperado + " para " + X + " pero se encontró " + K;
+        //return "ERROR [" + (codigoError == 101 ? 1 : 2) + ": " + codigoError + "]: Se esperaba " + tipoEsperado + " para " + X + " pero se encontró " + K;
     }
 
     private boolean esTerminal(int simbolo) {
